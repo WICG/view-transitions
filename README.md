@@ -111,6 +111,22 @@ development by bringing similar transition capabilities to the web platform.
 * [Thoughts in 2015 by a Mozilla engineer](http://www.chrislord.net/2015/04/24/web-navigation-transitions/)
 * [IE Page Transition Filters](https://schepp.dev/posts/today-the-trident-era-ends/#page-transition-filters)
 
+## Alternatives
+
+### SPA Polyfill
+
+The proposed API for a Single-Page App should, in theory, be polyfillable by a
+javascript library. This is because script has access to all of the elements
+and effects that would be used in the transition.
+
+However, we believe that this is hard to do. For instance, to achieve the
+effect of the example page transition with only the background change, script
+would have need to figure out how to visually present two copies of content
+(other than the background color) and transition them.
+
+Furthermore, a polyfill would not be able to do the transition across
+Multiple-Page Apps.
+
 ## Other resources
 
 [Brief explainer in docs](https://docs.google.com/document/d/1UmAL_w5oeoFxrMWiw75ScJDQqYd_a20bOEWfbKhhPi8/edit#heading=h.puannjfvfhee)
