@@ -4,6 +4,12 @@ Shared Element Transitions is a proposal for a new script API that allows a
 simple set of transitions in both Single-Page Applications (SPAs) and
 Multi-Page Applications (MPAs).
 
+The inspiration for this feature are transitions similar to the ones listed in
+the [Material Design Principles](https://material.io/design/motion/the-motion-system.html).
+
+The intent is to support transitions similar to
+[Android Activity Transitions](https://developer.android.com/training/transitions/start-activity).
+
 ### Root Transitions
 
 The proposal can be split into two parts: a root transition, and a shared
