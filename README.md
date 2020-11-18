@@ -83,8 +83,9 @@ transitions. Note that this list is not comprehensive.
 
 Note that if a set of shared elements could be specified, then the User-Agent
 could also transition the shared elements independently on the root transition.
-The effect would be that the shared elements go from the old location to the
-new location _while_ root transition takes place.
+See also [Android Activity Transitions](https://developer.android.com/training/transitions/start-activity)
+for a use of this concept in that platform. The effect would be that the shared
+elements go from the old location to the new location _while_ root transition takes place.
 
 The above example API may change to include a sequence of elements that need to
 be shared, both in the `prepare` and the `start` phases:
@@ -100,9 +101,10 @@ This means that the elements specified in the prepare call automatically
 transition to the location and place of elements corresponding elements
 specified in the start call.
 
-In the example above, the same elements specified so the intended effect is for
-those elements to remain in place while the changed background is revealed by
-old background sliding left.
+In the example above, the same are elements specified when calling `prepare` and
+`start`. The intended effect is for those elements to smoothly animate between their
+source and destination size & position, while at the same time the
+changed background is revealed by old background sliding left.
 
 TODO: Add example video.
 
