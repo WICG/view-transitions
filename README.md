@@ -56,7 +56,7 @@ some changes.
 Below is a video of some of the sample transitions:
 [![Video Link for Shared Element Transitions](https://img.youtube.com/vi/yDFyLEN6aKk/0.jpg)](https://www.youtube.com/watch?v=yDFyLEN6aKk)
 
-A similar effect could be achieved in the MPA casee, although the API is likely
+A similar effect could be achieved in the MPA case, although the API is likely
 to differ slightly.
 
 #### Supported Effects
