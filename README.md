@@ -22,14 +22,12 @@ function changeBodyBackground() {
 }
 
 function handleTransition() {
-  const transition = document.createPageTransition({
+  document.documentTransition.prepare({
     rootTransition: "reveal-left",
     duration: 300
-  });
-
-  transition.prepare().then(() => {
+  }).then(() => {
     changeBodyBackground();
-    transition.start();
+    document.documentTransition.start().then(() => console.log("transition finished"));
   });
 }
 ```
@@ -39,14 +37,16 @@ background will change to blue. The change will appear on the next visual
 frame. However, if script calls `handleTransition()`, then the following steps
 happen:
 
-* We create a page transition with a "reveal-left" root transition, and a 300ms
-  transition duration.
-* We prepare the transition, which asynchronously saves a copy of the pixels
+* We prepare a documentTransition object with a "reveal-left" root transition,
+  and a 300ms transition duration.
+* The process of 'preparing' asynchronously saves a copy of the pixels
   currently present on the screen. When saving is done, the promise resolves.
 * After the promise resolves, we call `changeBodyBackground()`, which changes
-  the `body` element's background to blue, and begin the transition.
+  the `body` element's background to blue, and start the document transition.
 * Because the effect specified is "reveal-left", the saved pixels slide to the
-  left, revealing the new blue background body on the page.
+  left, revealing the new blue background body on the page. The similar effect
+  is possible regardless of the complexity of the page or the DOM changes
+  associated with the transition.
 
 Note that to accomplish a similar effect as a polyfill, the script would need
 to make a copy of the whole page, or draw to canvas, in order to have seemingly
@@ -91,22 +91,30 @@ The above example API may change to include a sequence of elements that need to
 be shared, both in the `prepare` and the `start` phases:
 
 ```js
-  transition.prepare([element1, element2]).then(() => {
+function handleTransition() {
+  document.documentTransition.prepare({
+    rootTransition: "reveal-left",
+    duration: 300,
+    sharedElements: [e1, e2, e3]
+  }).then(() => {
     changeBodyBackground();
-    transition.start([element1, element2]);
+    document.documentTransition.start([newE1, newE2, newE3]).then(
+      () => console.log("transition finished"));
   });
+}
 ```
 
 This means that the elements specified in the prepare call automatically
 transition to the location and place of elements corresponding elements
 specified in the start call.
 
-In the example above, the same are elements specified when calling `prepare` and
-`start`. The intended effect is for those elements to smoothly animate between their
-source and destination size & position, while at the same time the
-changed background is revealed by old background sliding left.
+## Status
 
-TODO: Add example video.
+The root element transitions are being developed in Chromium. You can try the
+API by running Canary with `--enable-features=DocumentTransition` flag. Note
+that this currently requires GPU rasterization to be enabled, which is the
+typical default. As we develop the feature further, these restrictions should
+not be necessary.
 
 ## Previous Efforts
 
