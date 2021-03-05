@@ -179,14 +179,12 @@ function animate(type) {
   // reveal-down
   // explode
   // implode
-  const transition = document.createPageTransition({
+  document.documentTransition.prepare({
     rootTransition: type,
     duration: duration.value
-  });
-
-  transition.prepare().then(() => {
+  }).then(() => {
     mutate();
-    transition.start();
+    document.documentTransition.start();
   });
 }
 
