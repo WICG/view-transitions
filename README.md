@@ -54,7 +54,7 @@ two copies of the DOM. One copy would slide and another one be revealed with
 some changes.
 
 Below is a video of some of the sample transitions:
-[![Video Link for Shared Element Transitions](https://img.youtube.com/vi/yDFyLEN6aKk/0.jpg)](https://www.youtube.com/watch?v=yDFyLEN6aKk)
+[![Video Link for Shared Element Transitions](https://img.youtube.com/vi/0a_cOCatKXM/0.jpg)](https://www.youtube.com/watch?v=0a_cOCatKXM)
 
 A similar effect could be achieved in the MPA case, although the API is likely
 to differ slightly.
