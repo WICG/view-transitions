@@ -110,11 +110,23 @@ specified in the start call.
 
 ## Status
 
-The root element transitions are being developed in Chromium. You can try the
-API by running Canary with `--enable-features=DocumentTransition` flag. Note
-that this currently requires GPU rasterization to be enabled, which is the
-typical default. As we develop the feature further, these restrictions should
-not be necessary.
+The API is available to test in Chrome Canary. 
+
+It can be enabled by toggling the documentTransition API in
+[about:flags](chrome://flags/#document-transition)
+
+### Known limitations
+
+The following is a list of known limitations of the API.
+
+* Currently only the outermost document transitions are supported. This means
+  that local iframes in particular would not work as expected.
+* The API currently requires GPU rasterization. You can check if it is enabled
+  for you by navigating to [about:gpu](chrome://gpu). If Rasteriation is
+  Hardware accelerated, then you have GPU rasterization enabled.
+
+Note that these are not limitations of the API, but rather limitations of our
+current implementation. We are working on improving our implementation.:w
 
 ## Previous Efforts
 
