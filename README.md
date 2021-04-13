@@ -98,7 +98,7 @@ function handleTransition() {
     sharedElements: [e1, e2, e3]
   }).then(() => {
     changeBodyBackground();
-    document.documentTransition.start([newE1, newE2, newE3]).then(
+    document.documentTransition.start({ sharedElements: [newE1, newE2, newE3] }).then(
       () => console.log("transition finished"));
   });
 }
