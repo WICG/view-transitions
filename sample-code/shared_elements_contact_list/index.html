@@ -1,0 +1,312 @@
+<!doctype html>
+<script>
+const data = [
+  {
+    first_name: "Albertina",
+    last_name: "Brittain",
+    icon: "resources/a.jpg",
+    chat: "abrittain",
+    email: "abrittain@example.com",
+    cell: "(555) 555-5555",
+    home: "(123) 321-3211",
+    work: "(111) 222-3333"
+  },
+  {
+    first_name: "Ali",
+    last_name: "Durand",
+    icon: "resources/b.jpg",
+    chat: "callmeal",
+    email: "adurand11@example.com",
+    cell: "(555) 555-5555",
+    home: "(123) 321-3211",
+    work: "(111) 222-3333"
+  },
+  {
+    first_name: "Alphonso",
+    last_name: "Engelking",
+    icon: "resources/c.jpg",
+    chat: "alphonsoe",
+    email: "alphonsoe@example.com",
+    cell: "(555) 555-5555",
+    home: "(123) 321-3211",
+    work: "(111) 222-3333"
+  },
+  {
+    first_name: "Angelika",
+    last_name: "Rustin",
+    icon: "resources/d.jpg",
+    chat: "rustin",
+    email: "rustin@example.com",
+    cell: "(555) 555-5555",
+    home: "(123) 321-3211",
+    work: "(111) 222-3333"
+  },
+  {
+    first_name: "Angelo",
+    last_name: "Shelburne",
+    icon: "resources/e.jpg",
+    chat: "anshel",
+    email: "anshel@example.com",
+    cell: "(555) 555-5555",
+    home: "(123) 321-3211",
+    work: "(111) 222-3333"
+  },
+  {
+    first_name: "Bobby",
+    last_name: "Fischer",
+    icon: "resources/f.jpg",
+    chat: "chessgm",
+    email: "chessgm@example.com",
+    cell: "(555) 555-5555",
+    home: "(123) 321-3211",
+    work: "(111) 222-3333"
+  },
+  {
+    first_name: "Brenda",
+    last_name: "Peters",
+    icon: "resources/g.jpg",
+    chat: "bpeters",
+    email: "bpeters@example.com",
+    cell: "(555) 555-5555",
+    home: "(123) 321-3211",
+    work: "(111) 222-3333"
+  }
+]
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body {
+  overflow: hidden;
+  margin: 0;
+  cursor: default;
+}
+#list_view {
+  height: 100vh;
+  overflow: auto;
+}
+.header {
+  font-family: Arial;
+  font-size: 18pt;
+  color: white;
+  background: #4076ff;
+  height: 90px;
+
+  display: flex;
+  flex-direction: row;
+  justify-items: space-between;
+  align-items: center;
+
+  box-shadow: 0 1px 10px 0 grey;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+}
+.heading {
+  flex-grow: 1;
+}
+.hotdog_menu {
+  background: url("resources/hotdog.png");
+  margin: 20px;
+  width: 30px;
+  height: 30px;
+}
+.step_menu {
+  background: url("resources/step.png");
+  margin: 20px;
+  width: 30px;
+  height: 30px;
+}
+.row {
+  height: 90px;
+  border-bottom: 1px solid lightgrey;
+
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+}
+.icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  margin: 20px;
+  contain: paint;
+}
+.name {
+  font-family: Arial;
+  font-size: 12pt;
+  contain: paint;
+}
+.details_name {
+  font-family: Arial;
+  font-size: 18pt;
+  color: white;
+  contain: paint;
+}
+.details_name > .first_name {
+  font-weight: normal;
+}
+
+.first_name {
+  font-weight: bold;
+}
+.placeholder {
+  visibility: hidden;
+}
+
+.hidden {
+  display: none;
+}
+
+#details_view {
+  height: 100vh;
+  overflow: auto;
+}
+
+#backdrop {
+  background: url("resources/bg.jpg");
+  height: 300px;
+  contain: layout paint;
+}
+#backdrop > .row {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+#back_button {
+  width: 50px;
+  height: 50px;
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: url("resources/back.png");
+}
+</style>
+
+<div id=list_view>
+  <div class=header>
+    <div class=hotdog_menu></div>
+    <div class=heading>All Contacts</div>
+    <div class=step_menu></div>
+  </div>
+  <div class="row placeholder"></div>
+  <div id=contacts>
+  </div>
+</div>
+
+<div id=details_view class=hidden>
+  <div id=backdrop>
+    <div id=back_button></div>
+    <div class=row>
+      <img class=icon src=""></img>
+      <div class=details_name>
+        <span class=first_name></span>
+        <span class=last_name></span>
+      </div>
+    </div>
+  </div>
+  <div id=contact_details>
+  </div>
+</div>
+
+<script>
+function constructList() {
+  for (let i = 0; i < data.length; ++i) {
+    const e = document.createElement("div");
+    e.classList.add("row");
+    e.id = "e" + i;
+    e.innerHTML = `
+      <img class=icon src="${data[i].icon}"></img>
+      <div class=name>
+        <span class=first_name>${data[i].first_name}</span>
+        <span class=last_name>${data[i].last_name}</span>
+      </div>`;
+    contacts.appendChild(e);
+  }
+}
+
+async function showList() {
+  if (document.documentTransition) {
+    await document.documentTransition.prepare({
+      rootTransition: "reveal-down"
+    });
+  }
+
+  details_view.classList.add("hidden");
+  list_view.classList.remove("hidden");
+
+  if (document.documentTransition) {
+    await document.documentTransition.start();
+  }
+}
+
+function appendRow(e, src, info) {
+  const row = document.createElement("div");
+  row.classList.add("row");
+  row.innerHTML = `
+    <img class=icon src="${src}"></img>
+    <div class=name>${info}</div>
+  `;
+  e.appendChild(row);
+}
+
+function constructDetails(i) {
+  backdrop.querySelector(".icon").src = data[i].icon;
+  backdrop.querySelector(".first_name").innerText = data[i].first_name;
+  backdrop.querySelector(".last_name").innerText = data[i].last_name;
+
+  contact_details.innerHTML = "";
+  appendRow(contact_details, "resources/chat.png", data[i].chat);
+  appendRow(contact_details, "resources/email.png", data[i].email);
+  appendRow(contact_details, "resources/phone1.png", data[i].cell);
+  appendRow(contact_details, "resources/phone2.png", data[i].home);
+  appendRow(contact_details, "resources/phone3.png", data[i].work);
+}
+
+async function showDetails(i) {
+  if (document.documentTransition) {
+    const row = document.getElementById("e" + i);
+    await document.documentTransition.prepare({
+      rootTransition: "cover-up",
+      sharedElements: [
+        row.querySelector(".icon"),
+        row.querySelector(".name"),
+        null
+      ]
+    });
+  }
+
+  details_view.classList.remove("hidden");
+  list_view.classList.add("hidden");
+  constructDetails(i);
+
+  if (document.documentTransition) {
+
+    await document.documentTransition.start({
+      sharedElements: [
+        backdrop.querySelector(".icon"),
+        backdrop.querySelector(".details_name"),
+        backdrop
+      ]
+    });
+  }
+}
+
+function registerClickHandlers() {
+  for (let i = 0; i < data.length; ++i) {
+    const e = document.getElementById("e" + i);
+    e.addEventListener("click", () => showDetails(i));
+  }
+  back_button.addEventListener("click", () => showList());
+}
+
+function init() {
+  constructList();
+  registerClickHandlers();
+}
+
+onload = init;
+</script>
