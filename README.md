@@ -126,13 +126,12 @@ The following is a list of known limitations of the API.
 
 * Currently only the outermost document transitions are supported. This means
   that local iframes in particular would not work as expected.
-* Shared element component of the API is currently not implemented.
 * The API currently requires GPU rasterization. You can check if it is enabled
   for you by navigating to [about:gpu](chrome://gpu). If Rasteriation is
   Hardware accelerated, then you have GPU rasterization enabled.
 
 Note that these are not limitations of the API, but rather limitations of our
-current implementation. We are working on improving our implementation.:w
+current implementation. We are working on improving our implementation.
 
 ## Previous Efforts
 
