@@ -114,9 +114,42 @@ achieve the effect.
 
 [![Video Link for Shared Element Transitions](https://img.youtube.com/vi/K7oVrXlVsgE/0.jpg)](https://www.youtube.com/watch?v=K7oVrXlVsgE)
 
+## Multi-page support
+
+With some work, the above effects can be achieved with existing animation
+frameworks. In other words, since all of the effects occur on Single-Page Apps,
+the page has full control of where the contents are at any given time. This
+means that although it may be a lot of work, the effects are possible.
+
+We want to extend the documentTransition API to work with Multi-Page Apps as
+well. This means that the same effects would be achieved across page
+navigations. This is not something that is currently possible, since neither
+the source nor the destination pages can access and blend pixel content from
+both pages.
+
+The API shape is being discussed on [this issue](https://github.com/vmpstr/shared-element-transitions/issues/2).
+
+Part of the API remains the same: we need to prepare a frame before the
+animation can start. When the page is prepared, we can begin the animation with
+a call to
+
+```js
+dovument.documentTransition.startOnNavigation(
+  url,
+  sharedElements: selectorList
+);
+```
+
+This call will initiate a navigation with a prepared effect.
+
+Note that because the page initiating the navigation does not have access to
+the elements of the destination page, we instead have to provide a list of
+selectors. The format of the selectors is still under active discussion. We
+will update this page when we have built consensus.
+
 ## Status
 
-The API is available to test in Chrome Canary. 
+The SPA part of the API is available to test in Chrome Canary. 
 
 It can be enabled by toggling the documentTransition API in
 [about:flags](chrome://flags/#document-transition)
@@ -125,11 +158,9 @@ It can be enabled by toggling the documentTransition API in
 
 The following is a list of known limitations of the API.
 
+* For now, the API only works with Single-Page Apps.
 * Currently only the outermost document transitions are supported. This means
   that local iframes in particular would not work as expected.
-* The API currently requires GPU rasterization. You can check if it is enabled
-  for you by navigating to [about:gpu](chrome://gpu). If Rasteriation is
-  Hardware accelerated, then you have GPU rasterization enabled.
 
 Note that these are not limitations of the API, but rather limitations of our
 current implementation. We are working on improving our implementation.
