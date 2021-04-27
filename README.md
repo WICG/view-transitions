@@ -92,6 +92,13 @@ The above example API may change to include a sequence of elements that need to
 be shared, both in the `prepare` and the `start` phases:
 
 ```js
+<style>
+#e1, #e2, #e3, #newE1, #newE2, #newE3 {
+  contain: paint;
+}
+</style>
+...
+<script>
 function handleTransition() {
   document.documentTransition.prepare({
     rootTransition: "reveal-left",
@@ -103,11 +110,17 @@ function handleTransition() {
       () => console.log("transition finished"));
   });
 }
+...
+</script>
 ```
 
 This means that the elements specified in the prepare call automatically
 transition to the location and place of elements corresponding elements
 specified in the start call.
+
+Please note that `contain: paint` is currently required on each element that
+participates in the sharedelement transition. we're working on figuring out if
+this is a hard requirement or whether we can remove it.
 
 Below is an example that utilizes both shared and root element transitions to
 achieve the effect.
@@ -153,6 +166,11 @@ The SPA part of the API is available to test in Chrome Canary.
 
 It can be enabled by toggling the documentTransition API in
 [about:flags](chrome://flags/#document-transition)
+
+Please note that paint containment is required for each of the shared elements.
+We're working on adding better error messaging for cases when paint containment
+isn't present, but for now if it's missing then the elements will not
+participate in shared element transition.
 
 ### Known limitations
 
