@@ -134,7 +134,7 @@ animation can start. When the page is prepared, we can begin the animation with
 a call to
 
 ```js
-dovument.documentTransition.startOnNavigation(
+document.documentTransition.startOnNavigation(
   url,
   sharedElements: selectorList
 );
