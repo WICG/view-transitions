@@ -24,7 +24,6 @@ function changeBodyBackground() {
 function handleTransition() {
   document.documentTransition.prepare({
     rootTransition: "reveal-left",
-    duration: 300
   }).then(() => {
     changeBodyBackground();
     document.documentTransition.start().then(() => console.log("transition finished"));
@@ -37,8 +36,6 @@ background will change to blue. The change will appear on the next visual
 frame. However, if script calls `handleTransition()`, then the following steps
 happen:
 
-* We prepare a documentTransition object with a "reveal-left" root transition,
-  and a 300ms transition duration.
 * The process of 'preparing' asynchronously saves a copy of the pixels
   currently present on the screen. When saving is done, the promise resolves.
 * After the promise resolves, we call `changeBodyBackground()`, which changes
@@ -102,7 +99,6 @@ be shared, both in the `prepare` and the `start` phases:
 function handleTransition() {
   document.documentTransition.prepare({
     rootTransition: "reveal-left",
-    duration: 300,
     sharedElements: [e1, e2, e3]
   }).then(() => {
     changeBodyBackground();

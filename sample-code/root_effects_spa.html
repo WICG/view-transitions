@@ -126,10 +126,6 @@ input[type="number"] {
         <input id=implode type=button value=implode></input>
       </div>
       <div class=center>
-        <label for="duration">duration:</label>
-        <input id=duration type=number value=500 min=0 max=500></input>
-      </div>
-      <div class=center>
         <input type=checkbox id=animation_input></input>
         <label for=animation_input>animation</input>
       </div>
@@ -181,7 +177,6 @@ function animate(type) {
   // implode
   document.documentTransition.prepare({
     rootTransition: type,
-    duration: duration.value
   }).then(() => {
     mutate();
     document.documentTransition.start();
