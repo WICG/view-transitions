@@ -1,7 +1,6 @@
 # [Self-Review Questionnaire: Security and Privacy](https://w3ctag.github.io/security-questionnaire/)
 
-This questionare covers the Shared/Root Element Transitions API
-([explainer](https://github.com/WICG/shared-element-transitions)).
+This questionare covers the Shared/Root Element Transitions API ([explainer](https://github.com/WICG/shared-element-transitions)). Based on the [W3C TAG Self-Review Questionnaire: Security and Privacy](https://w3ctag.github.io/security-questionnaire/).
 
 #### 01. What information might this feature expose to Web sites or other parties, and for what purposes is that exposure necessary?
 
