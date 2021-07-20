@@ -1,7 +1,7 @@
 # Shared Element Transitions
 
 Shared Element Transitions is a proposal for a new script API that allows a
-simple set of transitions in both Single-Page Applications (SPAs) and
+simple set of transition animations in both Single-Page Applications (SPAs) and
 Multi-Page Applications (MPAs).
 
 The inspiration for this feature are transitions similar to the ones listed in
