@@ -186,9 +186,11 @@ web platform to effects like IE5 transition effects that were removed. We
 believe that the current proposal aligns web development with native mobile
 development by bringing similar transition capabilities to the web platform.
 
-* [Navigation Transition Design](https://docs.google.com/document/d/17jg1RRL3RI969cLwbKBIcoGDsPwqaEdBxafGNYGwiY4/edit?pli=1#heading=h.tdzcka62qyfo) ([intent to implement](https://groups.google.com/a/chromium.org/forum/#!searchin/blink-dev/intent$20to$20implement$20navigation$20transitions%7Csort:date/blink-dev/lWCtrTynaVk/Bvf4jIeEuPcJ))
+* [Previous Navigation Transition Design](https://docs.google.com/document/d/17jg1RRL3RI969cLwbKBIcoGDsPwqaEdBxafGNYGwiY4/preview) ([intent to implement](https://groups.google.com/a/chromium.org/forum/#!searchin/blink-dev/intent$20to$20implement$20navigation$20transitions%7Csort:date/blink-dev/lWCtrTynaVk/Bvf4jIeEuPcJ), [presentation](https://youtu.be/v0xRTEf-ytE?t=821))
 * [Thoughts in 2015 by a Mozilla engineer](http://www.chrislord.net/2015/04/24/web-navigation-transitions/)
 * [IE Page Transition Filters](https://schepp.dev/posts/today-the-trident-era-ends/#page-transition-filters)
+* [Layout transitions](https://tabatkins.github.io/specs/layout-transitions/)
+* [Navigation transitions](https://github.com/jakearchibald/navigation-transitions)
 
 ## Alternatives
 
