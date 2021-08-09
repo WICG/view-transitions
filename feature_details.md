@@ -47,7 +47,6 @@ This section covers the flow of events during a Document transition for the MPA 
 
     * Root transitions are created by using the `html` element in this API. There may be aspects of the transition where the root element will have special behaviour. But the proposal tries to align it closely with nested elements.
 
-
     * The type of navigations the previous Document will be allowed to define a transition for should be similar to the ones supported by app-history’s [navigate event](https://github.com/WICG/app-history#restrictions-on-firing-canceling-and-responding). The most likely exception will be the back/forward buttons. So a common pattern would be to use this API in response to the navigate event.
 
 * When a navigation is initiated to this url, the UA caches a static pixel snapshot for the DOM sub-tree of each shared element. If there is any hierarchical relationship between these elements, they are captured as separate snapshots to allow them to animate independently. The parent element's snapshot excludes content for any embedded shared elements, drawing the background which was earlier occluded by the child element.
@@ -68,7 +67,7 @@ document.documentTransition.setSameOriginTransitions(
 
 ```
 document.documentTransition.addEventListener(“handleTransition”, e => {
-    e.initializeTransition(transitionFrom(e.url, e.elements);
+    e.initializeTransition(transitionFrom(e.url, e.elements));
 });
 
 async function transitionFrom(previousUrl, elements) {
@@ -88,9 +87,9 @@ async function transitionFrom(previousUrl, elements) {
 }
 ```
 
-* The first rendering lifecycle update after the promise returned by the API resolves is when the animations for this transition are started. This frame also determines the end value for all properties animated during this transition, similar to the step on the previous Document to cache the start value for its elements.
+* The first rendering lifecycle update after the promise returned by the API resolves is when the animations for this transition are started. This frame also determines the end value for animated properties of shared elements in the new Document, similar to the step on the previous Document to cache the start value for its elements.
 
-* The developer can register another event listener to be notified when all animations associated with this transition have been finished. A caveat to note here is that since the transition is executed with a live DOM for the new Document, any changes to the shared elements in the new Document before this event will have undefined behaviour.
+* The developer can register another event listener to be notified when all animations associated with this transition have been finished. A caveat to note here is that since the transition is executed with a live DOM for the new Document, any changes to the shared elements in the new Document before this event is dispatched will have undefined behaviour.
 
 ### Transition Specification
 This section covers the details for capturing element snapshots from the previous Document, declaring animations on elements from both Documents and how content from both Documents is combined during the transition.
@@ -99,18 +98,18 @@ This section covers the details for capturing element snapshots from the previou
 When capturing elements from the previous Document and drawing elements from the new Document, we divide the CSS properties used to style an element into the following categories to define their behaviour during the transition :
 
 ##### Flattened Properties
-The properties which are flattened into the element’s snapshot. For example, the element’s [background](https://developer.mozilla.org/en-US/docs/Web/CSS/background) or [background-color](https://developer.mozilla.org/en-US/docs/Web/CSS/background-color). The shared element becomes the backdrop root for any element in its subtree when snapshotting it’s content, effectively flattening the backdrop-filter into the shared element’s snapshot.
+The properties which are flattened into the element’s snapshot. For example, the element’s [background](https://developer.mozilla.org/en-US/docs/Web/CSS/background) or [background-color](https://developer.mozilla.org/en-US/docs/Web/CSS/background-color). A few interesting considerations are outlined below :
 
-An open question here is deciding how much painted content for an element is captured. A shared element may be partially or completely clipped using a CSS clip/clip-path on the element or by an ancestor up to the viewport. However more content may be exposed during the transition. Since the end state is not known until the new Document loads, this decision needs to be made before the animations for the transition are finalized. The size of the painted content is referred to as “paint bounds” in the rest of the document.
+* It’s unclear how much painted content for an element should be captured. A shared element could be partially or completely clipped using a CSS clip/clip-path on the element or by an ancestor up to the viewport. However more content may be exposed during the transition TODO: Add example. Since the end state is not known until the new Document loads, this decision needs to be made before the animations for the transition are finalized. The size of the painted content is referred to as “paint bounds” in the rest of the document.
+
+* An element in the subtree of a shared element could have a backdrop-filter which was applied to an ancestor of the shared element TODO: Add example. One option is to make the shared element the backdrop root for any element in its subtree when snapshotting it’s content, effectively flattening the backdrop-filter into the shared element’s snapshot.
 
 ##### Animatable Properties
 The properties which can be animated during the transition. Each shared element creates a stacking context and the properties which are animated should closely align with effects which are applied to the stacking context output, as opposed to the painted element. The specific property types animatable with this feature are : opacity, filter, clip, transform, clip-path, mask-image, backdrop-filter. The properties which define how an element blends into its parent stacking context (for example mix-blend-mode) are also retained.
 
 While the properties above map directly to an existing CSS concept, we need to define a new concept for paired transitions. Animating the painted content between the elements involves the following animations. In future iterations, we’d like to expose these to the developer for low level customization, either grouped into a single property (`content`) or exposed separately.
 
-
-* The container size for the element animates from the paint bounds of the previous element to the paint bounds of the new element. During this animation, neither element’s content fits the size of the container. Fitting the painted content within the container is similar to a resize operation to fit a [replaced element’s](https://developer.mozilla.org/en-US/docs/Web/CSS/Replaced_element) content. The default animation uses the behaviour defined by fill mode in [object-fit](https://developer.mozilla.org/en-US/docs/Web/CSS/object-fit) but customizing this should be supported going forward.
-
+* The container size for the element animates from the paint bounds of the previous element to the paint bounds of the new element. During this animation, neither element’s content fits the size of the container. Fitting the painted content within the container is similar to a resize operation to fit a [replaced element’s](https://developer.mozilla.org/en-US/docs/Web/CSS/Replaced_element) content. The default animation uses the behaviour defined by fill mode in [object-fit](https://developer.mozilla.org/en-US/docs/Web/CSS/object-fit) but customizing this should be supported going forward. TODO : Add example.
 
 * The pixels from the painted content of the 2 elements are blended using a [cross-fade](https://developer.mozilla.org/en-US/docs/Web/CSS/cross-fade()) animation from `cross-fade(previous 100%, new 0%)` to `cross-fade(previous 0%, new 100%)`.
 
@@ -134,7 +133,7 @@ If one of `sharedElement` or `element` is set, this is an enter or exit transiti
 An [open request](https://github.com/WICG/shared-element-transitions/issues/28) here is the ability to add low-level customization to these animations by specifying a delay, duration, easing curve, keyframes similar to the [Web Animation API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API). A potential option to provide this capability in future iterations is to add a `keyframes` field to this dictionary which supports property types listed under [Animatable Properties](#animatable-properties). The syntax is defined under [Processing a keyframes argument](https://drafts.csswg.org/web-animations-1/#processing-a-keyframes-argument) in Web Animations API. It’s worth mentioning that the keyframes syntax already has a concept of an implicit start/end keyframe which could map to the start/end state for each property computed in the previous/new Document respectively.
 
 #### Referencing Elements
-Specifying a transition above requires the new Document to reference elements from the previous Document. We address this problem, along with flexibility to exchange contextual information between Documents, by introducing a placeholder for elements captured from the previous Document. The documentTransition APIs mentioned in the following explanation are clarified under [Control Flow](#control-flow).
+Specifying a transition above requires the new Document to reference elements from the previous Document. We address this problem, along with flexibility to exchange contextual information between Documents, by introducing a placeholder for shared elements captured from the previous Document. The documentTransition APIs mentioned in the following explanation are clarified under [Control Flow](#control-flow).
 
 * The dictionary used to specify a shared element cached from the previous Document in documentTransition.setSameOriginTransitions has the following fields :
     * `element` : A reference to the [Element](https://dom.spec.whatwg.org/#interface-element) in the previous Document.
@@ -154,17 +153,16 @@ The following steps define the behaviour of how content from the two Documents i
 
 * We assume that the dimensions for the initial containing block for both Documents is the same. If this changes, for example because the user resizes the browser window before the transition finishes, the transition is aborted.
 
-* During the transition, the UA creates a new root element (hidden from script), referred to as `TransitionRoot` which establishes the root stacking context and containing block. The background color for the `TransitionRoot` is the same as the background color for the root element in the new Document. By default, all shared elements are direct descendants of the `TransitionRoot`.
+* During the transition, the UA creates a new root element (hidden from script), referred to as `TransitionRoot` which establishes the root stacking context and containing block. The background color for the `TransitionRoot` is the same as the background color for the root element in the new Document. By default, all shared elements (including root elements from both Documents) are direct descendants of the `TransitionRoot`.
 
-* TODO : Clarify how the start/end value of animatable properties are computed for the transition.
+* TODO : Clarify the details of how properties are computed and animated during the transition.
 
 * We also need to define the order in which elements which share a stacking context are rendered. The current proposal allows the developer to explicitly control this by providing an ordered list (back-to-front) of `ElementTransition` in the `handleTransition.initiateTransition` API. But it’s unclear if this control is unnecessary complexity. The common use-case would be to maintain the same visual order for elements within the previous and new Document to avoid abrupt changes when the transition starts and ends.
 
-A customization option for future iterations is enabling persistence of hierarchical relationships between elements during a transition. Let’s say a Document has a shared element A which has descendants B, C, D. The developer can specify whether A should form a parent stacking context and containing block for its descendants during the transition. This creates a tree of stacking contexts with elements from both Documents rooted at `TransitionRoot`.
+A customization option for future iterations is enabling persistence of hierarchical relationships between elements during a transition. Let’s say a Document has a shared element A which has descendant shared elements B, C, D. The developer can specify whether A should form a parent stacking context and containing block for its descendants during the transition. This creates a tree of stacking contexts with elements from both Documents rooted at `TransitionRoot`.
 
 ## Security Considerations
 Since the design above is limited to same-origin transitions, the only security constraint is to ensure that script can never read pixel content for element snapshots. This is necessary since the Document may embed cross-origin content (iframes, CORS resources, etc.) and multiple restricted user information (visited links history, dictionary used for spell check, etc.)
-
 
 ## Future Work
 Subsequent designs should cover the cross-origin use-case and address design considerations specific to that use-case. A few problems restricted to it are :
