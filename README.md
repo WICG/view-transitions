@@ -25,9 +25,13 @@ function handleTransition() {
   document.documentTransition.prepare({
     rootTransition: "reveal-left",
   }).then(() => {
-    changeBodyBackground();
+    await changeBodyBackground();
     document.documentTransition.start().then(() => console.log("transition finished"));
   });
+}
+
+async function changeBodyBackground() {
+    ...
 }
 ```
 
@@ -40,6 +44,9 @@ happen:
   currently present on the screen. When saving is done, the promise resolves.
 * After the promise resolves, we call `changeBodyBackground()`, which changes
   the `body` element's background to blue, and start the document transition.
+  The browser defers painting any updates to the DOM until
+  `documentTransition.start` is called. This allows setting up the final frame
+  for the transition asynchronously. 
 * Because the effect specified is "reveal-left", the saved pixels slide to the
   left, revealing the new blue background body on the page. The similar effect
   is possible regardless of the complexity of the page or the DOM changes
