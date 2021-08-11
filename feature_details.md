@@ -1,8 +1,8 @@
-# Feature Details
+# Shared Element Transitions
 
-This document is a detailed description of this feature along with the design assumptions, constraints and targeted use-cases. The aim is to facilitate API discussion and ensure it's structured with a focus on interoperability.
+This document is a detailed description of the Shared Element Transitions feature along with the design assumptions, constraints and targeted use-cases. The aim is to facilitate API discussion and ensure it's structured with a focus on interoperability.
 
-Note that since the API details are still in flux, this may not be consistent with other documentation. Please refer to the documentation in the README file and sample-code to experiment with the current implementation in Chromium.
+Note that since the API details are still in flux, this may not be consistent with other documentation. Please refer to the documentation in the [README](https://github.com/WICG/shared-element-transitions/blob/main/README.md) file, which is kept up to date with the latest details of the API.
 
 ## Problem Statement
 When a user navigates on the web, they get to see the inner workings of web experiences: flash of white followed by a piece-meal rendering phase. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. Not only that, a smooth animation to transition between scenes also reduces the loading latency perceived by the user even if the actual loading time is the same. For these reasons, most platforms provide easy to use primitives to enable developers to build seamless transitions : [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
@@ -11,13 +11,22 @@ This feature provides developers with the same capability on the web, irrespecti
 
 ## Use Cases
 
-There are 3 categories of use-cases targeted by this feature which have slightly different motivations and constraints :
+There are 3 categories of use-cases targeted by this feature which have different motivations and constraints :
 
 ### Single Page Apps (SPA)
-The transitions targeted by this feature are in theory already possible for SPAs today but these are complicated. The developer needs to retain the previous DOM, asynchronously set up the new DOM, set up animations between live DOM elements for both states and clean up the previous state at the end of the transition. Since live DOM needs to be present for both states at the same time, it's common to get the details wrong (eg, previous state might remain clickable or may stick around after the transition). This leads to difficult-to-debug issues and can have a negative impact on accessibility. We want to make authoring such transitions easier with a native API that offers some level of customization.
+The transitions targeted by this feature are in theory already possible for SPAs today but are complicated to get right. In order to achieve the same effect, the developer needs to do the following:
+
+* Retain the current version of the DOM
+* Asynchronously set up the new version of the DOM
+* Set up animations between live DOM elements for both states
+* Clean up the previous state at the end of the transition.
+
+Since live DOM needs to be present for both states at the same time, it's common to get the details wrong (eg, previous state might remain clickable or may stick around after the transition). This leads to difficult-to-debug issues and can have a negative impact on accessibility.
+
+We want to make authoring such transitions easy with a native API that offers some level of customization.
 
 ### Multi Page Apps (MPA)
-It’s not possible to have these transitions today for multi-page apps (or same-origin navigations) and in fact a lack of this ends up being one of the drivers for web authors to create SPAs. We want this API to enable authoring transitions within an MPA with a similar feature set as the SPA case above. 
+It’s not possible to have these transitions today for multi-page apps (or same-origin navigations). In fact, a lack of this ends up being one of the drivers for web authors to create SPAs. We want this API to enable authoring transitions within an MPA with a similar feature set as the SPA case above. 
 
 ### Cross Origin Transitions
 Cross-origin transitions are infeasible similar to MPAs. A common use-case for this is content aggregator sites (search engines, social media sites, news aggregators, etc.). These sites frequently display a hero image/header which could be animated during the navigation to provide a seamless transition.
@@ -26,13 +35,13 @@ Cross-origin transitions have additional security/privacy constraints. In partic
 
 * The animations associated with the transition need to be defined completely by the previous Document, which is aware of the site the user is navigating to and has contextual information about the user journey.
 
-* The animations need to be executed such that there are no observable side-effects for the new and previous Document. For example, setting an obscure animation for a specific element on the new Document could be used to exchange information between origins. Enforcing this could influence the stage in the rendering pipeline where the UA executes these animations.
+* The animations need to be executed such that there are no observable side-effects for the incoming and outgoing Documents. For example, setting an obscure animation for a specific element on the incoming Document could be used to exchange information between origins. Enforcing no side-effects is an important consideration, since it can influence the stage in the rendering pipeline where the UA executes these animations.
 
 An important assumption in the design of this feature is that it's reasonable to limit customization options for cross-origin transitions to make it easier for UAs to enforce the constraints above. But the API/implementation should strive to not unnecessarily limit capabilities for same-origin transitions due to cross-origin constraints.
 
 
 ## Design
-**Disclaimer** : The details in this design focus on the SPA/MPA use-case with extensive customizability. It’s expected that the functionality will be delivered incrementally with the initial version of the API being quite limited in scope. The purpose of exploring the customizability options is to ensure the API can evolve to accommodate them.
+**Disclaimer** : The details in this design focus on the SPA/MPA use-case with extensive customizability. We expect to deliver the functionality incrementally with the initial version of the API being limited in scope. The purpose of exploring the customizability options is to ensure the API can evolve to accommodate them.
 
 There are 2 kinds of semantic transitions which are a part of this feature :
 
@@ -43,7 +52,7 @@ There are 2 kinds of semantic transitions which are a part of this feature :
 ### Control Flow
 This section covers the flow of events during a Document transition for the MPA use-case. The SPA scenario is identical except the events may map to different API points and are dispatched on the same Document. The code-snippets used are a rough API sketch with detailed explanation in subsequent sections.
 
-* The entry point for this API is document.documentTransition. The previous Document provides a url keyed list of elements, referred to as shared elements, which could be animated during a transition. There are a couple of important assumptions here :
+* The entry point for this API is a new `document.documentTransition` object. The previous Document provides a url keyed list of elements, referred to as shared elements, which could be animated during a transition. There are a couple of important assumptions here :
 
     * Root transitions are created by using the `html` element in this API. There may be aspects of the transition where the root element will have special behaviour. But the proposal tries to align it closely with nested elements.
 
@@ -128,7 +137,7 @@ The following fields are used in a dictionary, referred to as `ElementTransition
 
 * `sharedElement` : A reference to an element in the previous Document, explained in Referencing Elements (#referencing-elements).
 
-If one of `sharedElement` or `element` is set, this is an enter or exit transition respectively. The animations for each animatable property are defined based on `transitionType`. If both `sharedElement` and `element` are set, this is a paired transition. This transition first creates a combined image using painted content from both elements based on the `content` animation specification under [Animatable Properties](#animatable-properties). Other animatable properties are then applied to this combined output.
+If exactly one of `sharedElement` or `element` is set, this is an enter or exit transition respectively. The animations for each animatable property are defined based on `transitionType`. If both `sharedElement` and `element` are set, this is a paired transition. This transition first creates a combined image using painted content from both elements based on the `content` animation specification under [Animatable Properties](#animatable-properties). Other animatable properties are then applied to this combined output.
 
 An [open request](https://github.com/WICG/shared-element-transitions/issues/28) here is the ability to add low-level customization to these animations by specifying a delay, duration, easing curve, keyframes similar to the [Web Animation API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API). A potential option to provide this capability in future iterations is to add a `keyframes` field to this dictionary which supports property types listed under [Animatable Properties](#animatable-properties). The syntax is defined under [Processing a keyframes argument](https://drafts.csswg.org/web-animations-1/#processing-a-keyframes-argument) in Web Animations API. It’s worth mentioning that the keyframes syntax already has a concept of an implicit start/end keyframe which could map to the start/end state for each property computed in the previous/new Document respectively.
 
