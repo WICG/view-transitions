@@ -7,7 +7,7 @@ Note that since the API details are still in flux, this may not be consistent wi
 ## Problem Statement
 When a user navigates on the web, they get to see the inner workings of web experiences: flash of white followed by a piece-meal rendering phase. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. Not only that, a smooth animation to transition between scenes also reduces the loading latency perceived by the user even if the actual loading time is the same. For these reasons, most platforms provide easy to use primitives to enable developers to build seamless transitions : [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
 
-This feature provides developers with the same capability on the web, irrespective of whether the scenes in a transition are rendered across Documents.
+This feature provides developers with the same capability on the web, irrespective of whether the scenes in a transition are rendered across Documents. The feature supports creating transitions between Documents which share the same [Browsing Context](https://developer.mozilla.org/en-US/docs/Glossary/Browsing_context).
 
 ## Use Cases
 
@@ -35,140 +35,360 @@ Cross-origin transitions have additional security/privacy constraints. In partic
 
 * The animations associated with the transition need to be defined completely by the previous Document, which is aware of the site the user is navigating to and has contextual information about the user journey.
 
-* The animations need to be executed such that there are no observable side-effects for the incoming and outgoing Documents. For example, setting an obscure animation for a specific element on the incoming Document could be used to exchange information between origins. Enforcing no side-effects is an important consideration, since it can influence the stage in the rendering pipeline where the UA executes these animations.
+* The animations need to be executed such that there are no observable side-effects for the new and previous Documents. For example, setting an obscure animation for a specific element on the incoming Document could be used to exchange information between origins. Enforcing no side-effects is an important consideration, since it can influence the stage in the rendering pipeline where the UA executes these animations.
 
 An important assumption in the design of this feature is that it's reasonable to limit customization options for cross-origin transitions to make it easier for UAs to enforce the constraints above. But the API/implementation should strive to not unnecessarily limit capabilities for same-origin transitions due to cross-origin constraints.
 
+## Sample Code
+This section explains how the feature can be used to add transitions to MPAs. There are a set of use-cases and edge cases to consider :
 
-## Design
-**Disclaimer** : The details in this design focus on the SPA/MPA use-case with extensive customizability. We expect to deliver the functionality incrementally with the initial version of the API being limited in scope. The purpose of exploring the customizability options is to ensure the API can evolve to accommodate them.
+### Root Transition
+Let's start with a root transition, which adds an animation to the root element of previous and new Documents. Below is a video of the transition we want to create :
 
-There are 2 kinds of semantic transitions which are a part of this feature :
+[![Video Link for Root Element Transition](https://img.youtube.com/vi/mCvvWMIGItY/0.jpg)](https://www.youtube.com/watch?v=mCvvWMIGItY)
 
-* Enter/Exit Transition : An element which exists only on the new Document animates as it enters the screen. The final state of the element in the new Document provides an end state for the animatable properties. Similarly an element which exists only on the previous Document animates as it exits the screen, with a start state for the animatable properties.
-
-* Paired Transition : An element which exists on both Documents is automatically animated from the start state on the previous Document to the end state on the new Document. The painted content for these elements may or may not be identical, which requires defining the behaviour for transitioning this content.
-
-### Control Flow
-This section covers the flow of events during a Document transition for the MPA use-case. The SPA scenario is identical except the events may map to different API points and are dispatched on the same Document. The code-snippets used are a rough API sketch with detailed explanation in subsequent sections.
-
-* The entry point for this API is a new `document.documentTransition` object. The previous Document provides a url keyed list of elements, referred to as shared elements, which could be animated during a transition. There are a couple of important assumptions here :
-
-    * Root transitions are created by using the `html` element in this API. There may be aspects of the transition where the root element will have special behaviour. But the proposal tries to align it closely with nested elements.
-
-    * The type of navigations the previous Document will be allowed to define a transition for should be similar to the ones supported by app-history’s [navigate event](https://github.com/WICG/app-history#restrictions-on-firing-canceling-and-responding). The most likely exception will be the back/forward buttons. So a common pattern would be to use this API in response to the navigate event.
-
-* When a navigation is initiated to this url, the UA caches a static pixel snapshot for the DOM sub-tree of each shared element. If there is any hierarchical relationship between these elements, they are captured as separate snapshots to allow them to animate independently. The parent element's snapshot excludes content for any embedded shared elements, drawing the background which was earlier occluded by the child element.
-
-* The feature supports a subset of [animatable properties](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_animated_properties) that can be interpolated during a transition. For each of those properties, the UA caches their start value to animate them during the transition. In addition to this metadata, we allow the developer to provide opaque contextual information (a unique identifier for the element, navigation trigger, scroll offset, site version etc.), referred to as propertyMap, about these elements to configure the transition.
+The entry point for this API is a new `document.documentTransition` object. The previous Document provides a list of elements which will be animated during the transition. Since this is root transition, this list only includes the `html` element. The result of calling `setSameOriginTransitionElements` below is that the browser caches a copy of the pixels (snapshot) currently present on the screen when a navigation to `foo.com/a.html` is initiated.
 
 ```
-document.documentTransition.setSameOriginTransitions(
-  {“foo.com/a.html” : [{element : document.html, propertyMap : {“id” : “root”}},
-                                 {element : document.getElementById(‘shared’), propertyMap : {“id” : “shared”}],
-   “foo.com/b.html” : [{element : document.html}]
+// The list of elements is keyed on url. When a user navigates to
+// a url, the corresponding entry in this dictionary is used to
+// decide which elements should be cached.
+document.documentTransition.setSameOriginTransitionElements(
+  {
+   “foo.com/a.html” : [{element : document.html}],
   });
 ```
 
-* When the new Document loads, the developer can register an `EventListener` to be notified if a transition was initiated by the previous Document. The event, referred to as `handleTransition`, provides the metadata for elements captured from the previous Document and the previous URL, a detailed explanation is at [Referencing Elements](#referencing-elements). The aim of the `handleTransition` event is to allow the developer to define the animations for a transition using information from both Documents. For instance, a paired element transition may be dropped if the corresponding element in the new Document renders offscreen.
-
-* The `handleTransition` event provides a promise based API to declare the transition parameters asynchronously. The motivation to make this asynchronous is to allow the new Document to go through intermediate layouts before it is ready to be displayed. The first paint for the Document is deferred and the previous Document is displayed until this promise is fulfilled and the transition can be started.
+When the new Document loads, script registers an event listener to be notified if a transition was initiated by the previous Document. The exact Document lifecycle stage before which this event should be registered is TBD.
 
 ```
-document.documentTransition.addEventListener(“handleTransition”, e => {
-    e.initializeTransition(transitionFrom(e.url, e.elements));
-});
+document.documentTransition.addEventListener(
+    “handleTransition”, e => {
+        e.startTransition(transitionFrom(e.previousUrl, e.previousElements));
+    });
 
-async function transitionFrom(previousUrl, elements) {
-    // Wait for resources required for this transition to load.
-    await waitForLoad(previousUrl);
+async function transitionFrom(previousUrl, previousElements) {
+    // Wait for the image on the new page to load before
+    // starting the transition.
+    await waitForImageLoad();
+    
+    // Old content slides with a fade out from center to left.
+    let oldRootAnimation =
+      {previousElement : previousElements[0],
+       transitionType : "slide-fade-left"};
+    
+    // New content is drawn underneath, revealed as the old
+    // content slides.
+    let newRootAnimation =
+      {newElement : document.html,
+       transitionType : "none"};
 
-    elementTransitions = []
-    for (let elem in elements) {
-        if (elem.propertyMap[“id”] === “root”) {
-          elementTransitions.push({sourceElement : elem, transitionType: “none”});
-          elementTransitions.push({destinationElement : document.html, transitionType : “fade”});
-        } else if (elem.propertyMap[“id”] === “shared”) {
-          elementTransitions.push({sourceElement : elem, destinationElement : document.getElementById(“shared”));
-        }
-    }
-    return elementTransitions;
+    return [oldRootAnimation, newRootAnimation];
 }
 ```
 
-* The first rendering lifecycle update after the promise returned by the API resolves is when the animations for this transition are started. This frame also determines the end value for animated properties of shared elements in the new Document, similar to the step on the previous Document to cache the start value for its elements.
+Adding an event listener for `handleTransition` will result in execution of following steps :
 
-* The developer can register another event listener to be notified when all animations associated with this transition have been finished. A caveat to note here is that since the transition is executed with a live DOM for the new Document, any changes to the shared elements in the new Document before this event is dispatched will have undefined behaviour.
+* The browser keeps displaying content for the previous Document when `handleTransition` is dispatched. This does not require the previous Document to be active since the browser can display a cached pixel copy.
 
-### Transition Specification
-This section covers the details for capturing element snapshots from the previous Document, declaring animations on elements from both Documents and how content from both Documents is combined during the transition.
+* The `handleTransition` event has a field `previousURL` : the URL for the previous Document. And `previousElements` : the list of placeholders for elements passed to `setSameOriginTransitionElements`, clarified in [API Proposal](#api-proposal).
 
-#### Element Snapshots
-When capturing elements from the previous Document and drawing elements from the new Document, we divide the CSS properties used to style an element into the following categories to define their behaviour during the transition :
+* The `startTransition` API on `handleTransition` event takes a promise to allow script to asynchronously prepare the new Document for first paint. The browser continues to display old content until the promise passed to this API resolves.
 
-##### Flattened Properties
-The properties which are flattened into the element’s snapshot. For example, the element’s [background](https://developer.mozilla.org/en-US/docs/Web/CSS/background) or [background-color](https://developer.mozilla.org/en-US/docs/Web/CSS/background-color). A few interesting considerations are outlined below :
+* The animations executed on root elements for both Documents during the transition are based on the `transitionType` specified for each.
 
-* It’s unclear how much painted content for an element should be captured. A shared element could be partially or completely clipped using a CSS clip/clip-path on the element or by an ancestor up to the viewport. However more content may be exposed during the transition TODO: Add example. Since the end state is not known until the new Document loads, this decision needs to be made before the animations for the transition are finalized. The size of the painted content is referred to as “paint bounds” in the rest of the document.
+### Single Element Transition
+We can also set a separate animation for parts of the page by specifying them separately in the API. Let's say we wanted the header to slide up during this transition :
 
-* An element in the subtree of a shared element could have a backdrop-filter which was applied to an ancestor of the shared element TODO: Add example. One option is to make the shared element the backdrop root for any element in its subtree when snapshotting it’s content, effectively flattening the backdrop-filter into the shared element’s snapshot.
+TODO : Add rough implementation for video.
 
-##### Animatable Properties
-The properties which can be animated during the transition. Each shared element creates a stacking context and the properties which are animated should closely align with effects which are applied to the stacking context output, as opposed to the painted element. The specific property types animatable with this feature are : opacity, filter, clip, transform, clip-path, mask-image, backdrop-filter. The properties which define how an element blends into its parent stacking context (for example mix-blend-mode) are also retained.
+Add the elements which will animate independently in the API call on the previous Document. The result is that the browser caches a separate pixel copy for each element in the list.
 
-While the properties above map directly to an existing CSS concept, we need to define a new concept for paired transitions. Animating the painted content between the elements involves the following animations. In future iterations, we’d like to expose these to the developer for low level customization, either grouped into a single property (`content`) or exposed separately.
+```
+document.documentTransition.setSameOriginTransitionElements(
+  {
+   “foo.com/a.html” : [{element : document.html},
+                       {element : document.getElementById("header")}],
+  });
+```
 
-* The container size for the element animates from the paint bounds of the previous element to the paint bounds of the new element. During this animation, neither element’s content fits the size of the container. Fitting the painted content within the container is similar to a resize operation to fit a [replaced element’s](https://developer.mozilla.org/en-US/docs/Web/CSS/Replaced_element) content. The default animation uses the behaviour defined by fill mode in [object-fit](https://developer.mozilla.org/en-US/docs/Web/CSS/object-fit) but customizing this should be supported going forward. TODO : Add example.
+The `handleTransition` event on the new Document specifies the animation for the header as follows :
 
-* The pixels from the painted content of the 2 elements are blended using a [cross-fade](https://developer.mozilla.org/en-US/docs/Web/CSS/cross-fade()) animation from `cross-fade(previous 100%, new 0%)` to `cross-fade(previous 0%, new 100%)`.
+```
+document.documentTransition.addEventListener(
+    “handleTransition”, e => {
+        e.startTransition(transitionFrom(e.previousUrl, e.previousElements));
+    });
 
-It’s conceivable that support for animatable properties will be added incrementally and not all will be supported across UAs. This is still an open question and one option could be for the API to allow feature detection to detect which properties are supported by the UA. Using an unsupported property on a shared element has undefined behaviour.
+async function transitionFrom(previousUrl, previousElements) {
+    ...
+    
+    let headerAnimation = 
+      {previousElement : previousElements[1],
+       transitionType : "slide-up"};
+       
+    return [oldRootAnimation, newRootAnimation, headerAnimation];
+}
+```
+
+### Paired Element Transition
+In some cases a semantically or visually same element is present in both Documents. We can set up an animation which automatically animates this element from it's old state to the new state :
+
+[![Video Link for Shared Element Transition](https://img.youtube.com/vi/GekohitaU5M/0.jpg)](https://www.youtube.com/watch?v=GekohitaU5M)
+
+Similar to the case above, update the list in `setSameOriginTransitionElements` to include the animated image :
+
+```
+document.documentTransition.setSameOriginTransitionElements(
+  {
+   “foo.com/a.html” : [{element : document.html},
+                       {element : document.getElementById("dog")}],
+  });
+```
+
+And specify a transition which associates these elements in the `handleTransition` event on the new Document :
+
+```
+document.documentTransition.addEventListener(
+    “handleTransition”, e => {
+        e.startTransition(transitionFrom(e.previousUrl, e.previousElements));
+    });
+
+async function transitionFrom(previousUrl, previousElements) {
+    await waitForImageLoad();
+    
+    ...
+    
+    let imageAnimation = 
+      {previousElement : previousElements[1],
+       newElement : document.getElementById("dog")};
+       
+    return [oldRootAnimation, newRootAnimation, imageAnimation];
+}
+```
+
+### Network Latency
+Performing a seamless transition requires deferring first paint until the new Document is ready for display. Web authors should ensure that this delay is reasonable and gracefully handle slow network activity. A potential way to do this could be to update the transition based on whether a resource could be fetched within a deadline. Let's take the example of [Paired Element Transition](#paired-element-transition) again :
+
+```
+async function transitionFrom(previousUrl, previousElements) {
+    ...
+    
+    bool imageLoaded = await waitForImageLoadWithTimeout();
+    
+    // Specify a paired transition if the image could be loaded within
+    // a deadline.
+    if (imageLoaded) {
+      let imageAnimation = 
+        {previousElement : previousElements[1],
+         newElement : document.getElementById("dog")};
+       
+       return [oldRootAnimation, newRootAnimation, imageAnimation];
+    }
+    
+    // Otherwise fallback to a simpler root transition.
+    return [oldRootAnimation, newRootAnimation];
+}
+```
+
+### New Document Layout
+A transition may need to be modified based on the layout of the new document for a given viewport size. Let's pick up the paired transition example again with a smaller browser window, which doesn't look as nice when the new paired element is partially onscreen :
+
+[![Video Link for Shared Element Offscreen Transition](https://img.youtube.com/vi/byFWwcqm0RQ/0.jpg)](https://www.youtube.com/watch?v=byFWwcqm0RQ)
+
+```
+async function transitionFrom(previousUrl, previousElements) {
+    ...
+
+    let elem = document.getElementById("dog");
+    let visibleRect = elem.getBoundingClientRect();
+    
+    // Only use a paired transition if at least half the element in
+    // either direction is onscreen.
+    if (visibleRect.width > elem.width / 2 ||
+        visibleRect.height > elem.height / 2) {
+      let imageAnimation = 
+        {previousElement : previousElements[1],
+         newElement : elem};
+       
+       return [oldRootAnimation, newRootAnimation, imageAnimation];
+    }
+    
+    // Otherwise fallback to a simpler root transition.
+    return [oldRootAnimation, newRootAnimation];
+}
+```
+
+### Old Document State
+Customizing a transition may depend on state from the old Document. The feature enables this by letting the web author pass contextual information between Documents. The following example considers a case where we use the source of navigation to decide the transition :
+
+[![Video Link for Shared Element Offscreen Transition](https://img.youtube.com/vi/Cxz7ezUiGv8/0.jpg)](https://www.youtube.com/watch?v=Cxz7ezUiGv8)
+
+The old Document passes info about which button click initiated the navigation :
+
+```
+document.documentTransition.setSameOriginTransitionElements(
+  {
+   “foo.com/one.html”   : [{element : document.getElementById("dog"),
+                            propertyMap : {"type" : "previous"}],
+   “foo.com/three.html” : [{element : document.getElementById("dog"),
+                            propertyMap : {"type" : "next"}],
+   “foo.com/fifty.html” : [{element : document.getElementById("dog"),
+                            propertyMap : {"type" : "random"}]
+  });
+```
+
+The new Document decides the transition type based on this information :
+
+```
+async function transitionFrom(previousUrl, previousElements) {
+    ...
+    let type = "none";
+    switch (previousElements[0].getPropertyMap()["type"]) {
+      // Old image slides to the left and fades away.
+      case "previous" :
+        type = "slide-fade-left";
+        break;
+      // Old image slides to the right and fades away.
+      case "next" :
+        type = "slide-fade-right";
+        break;
+      // Old image scales to grow in size and fades away.
+      case "random" :
+        type = "explode";
+        break;
+    }
+    
+    // Specify an animation for the old image to exit revealing new
+    // image.
+    let imageAnimation = 
+      {previousElement : previousElements[1],
+       transitionType : type};
+    return [imageAnimation];
+}
+```
+
+### Integration with App History API
+This feature integrates well with the app-history API which provides developers with a central framework for all navigation related logic. The following code-snippet provides an example :
+
+```
+appHistory.addEventListener("navigate", e => {
+    if (isSameOrigin(e.destination)) {
+      document.documentTransition.setSameOriginTransitionElements({
+            e.destination.url : [{element : document.html}]
+          });
+    }
+});
+```
+Transition handling in the new Document remains the same.
+
+## API Proposal
+The proposal below is roughly divided into 3 parts : the APIs used on the old and new Document for a same origin cross-document navigation and the API for a transition within the same Document.
+
+### Previous Document
+The first part of the API is a dictionary : `CacheElement`. This is used to specify elements to cache from the previous Document. This dictionary has the following parameters :
+
+* `element` : A reference to the [Element](https://dom.spec.whatwg.org/#interface-element). TODO : What should we do if layout for this element is disabled when a navigation is initiated? 
+
+* `propertyMap` : A `record<DOMString, any>` provided by the developer to pass any opaque contextual information to the new Document. The navigation trigger in [Old Document State](#old-document-state) is an example of such data. Allowing any javascript object supported by the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) as a value for this map would provide maximum flexibility. The reason for limiting to data cloneable data types is to permit serialization of these objects, if necessary.
+
+The syntax for `documentTransition.setSameOriginTransitionElements` is :
+
+```
+document.documentTransition.setSameOriginTransitionElements({
+    // nextURL: List of elements to cache.
+    USVString : [CacheElement, CacheElement],
+    USVString : [CacheElement, CacheElement],
+    ...
+});
+```
+
+Special handling is needed for a list of elements : `[CacheElement_Parent, CacheElement_Child]` where `CacheElement_Child` is a descendant of `CacheElement_Parent`. The parent element's snapshot excludes content for any descendant elements. The space covered by the descendant element shows the background which was earlier occluded by the descendant element.
+
+### New Document
+#### Referencing Elements
+The first concept for this feature on the new Document is a class : `PreviousDocumentElement`. This class provides a placeholder used by script in the new Document to reference elements from the previous Document. A `PreviousDocumentElement` object in the new Document maps 1:1 to a `CacheElement` object in the previous Document. This class has a `getPropertyMap()` API to retreive the `record<DOMString, any>` for the corresponding `CacheElement`.
 
 #### Animation Configuration
-The following fields are used in a dictionary, referred to as `ElementTransition`, to configure a single enter/exit or paired transition :
+The Shared Element Transition feature allows the web author to compose a transition by animating a set of elements. For example, animating the roots and sub-elements in [Single Element Transition](#single-element-transition) and [Paired Element Transition](#paired-element-transition). We divide these animations into the following semantic transition types :
 
-* `transitionType` : This is an enum to provide a predefined set of animation patterns for enter/exit transitions. These can be explicit patterns like `slide-left` (does a translation in the specified direction) which provide convenient defaults for common use-cases. For instance, sliding a header/footer offscreen. Or higher level abstractions like `previous`/`next` which allow the UA to decide the appropriate animation (for example based on the idiomatic pattern for the native OS).
+* Single Element Transition : An element which exists only on the new Document animates as it enters the screen. An element which exists only on the previous Document animates as it exits the screen. A Root transition can be built using two Single Element Transitions.
 
-* `duration` : The total length for this transition.
+* Paired Element Transition : An element which exists on both Documents is automatically animated between them. These elements may or may not be visually identical.
 
-* `delay` : A Document transition establishes a universal timeline for animations spanning multiple elements. This field indicates the delay in starting animations for this transition on this universal timeline.
+The parameters to confugure an instance of Single Element or Paired Element Transition are specified using a new dictionary type : `ElementTransition`. This dictionary has the following fields :
 
-* `element` : A reference to the [Element](https://dom.spec.whatwg.org/#interface-element) in the new Document.
+* `transitionType` : This is an enum to provide a predefined set of animation patterns for Single Element transitions. These can be explicit patterns like `slide-left` (does a translation in the specified direction) or higher level abstractions like `previous`/`next` which allow the UA to decide the appropriate animation (for example based on the idiomatic pattern for the native OS). The exact types are TBD.
 
-* `sharedElement` : A reference to an element in the previous Document, explained in Referencing Elements (#referencing-elements).
+* `duration` : The total length for this transition. The browser may cap this to a reasonable limit.
 
-If exactly one of `sharedElement` or `element` is set, this is an enter or exit transition respectively. The animations for each animatable property are defined based on `transitionType`. If both `sharedElement` and `element` are set, this is a paired transition. This transition first creates a combined image using painted content from both elements based on the `content` animation specification under [Animatable Properties](#animatable-properties). Other animatable properties are then applied to this combined output.
+* `delay` : A Document transition establishes a universal timeline for multiple `ElementTransition`s. This field indicates the delay in starting animations for this transition on this universal timeline.
 
-An [open request](https://github.com/WICG/shared-element-transitions/issues/28) here is the ability to add low-level customization to these animations by specifying a delay, duration, easing curve, keyframes similar to the [Web Animation API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API). A potential option to provide this capability in future iterations is to add a `keyframes` field to this dictionary which supports property types listed under [Animatable Properties](#animatable-properties). The syntax is defined under [Processing a keyframes argument](https://drafts.csswg.org/web-animations-1/#processing-a-keyframes-argument) in Web Animations API. It’s worth mentioning that the keyframes syntax already has a concept of an implicit start/end keyframe which could map to the start/end state for each property computed in the previous/new Document respectively.
+* `newElement` : A reference to the [Element](https://dom.spec.whatwg.org/#interface-element) in the new Document.
 
-#### Referencing Elements
-Specifying a transition above requires the new Document to reference elements from the previous Document. We address this problem, along with flexibility to exchange contextual information between Documents, by introducing a placeholder for shared elements captured from the previous Document. The documentTransition APIs mentioned in the following explanation are clarified under [Control Flow](#control-flow).
+* `previousElement` : A reference to a `PreviousDocumentElement` provided in the `handleTransition` event (clarified below).
 
-* The dictionary used to specify a shared element cached from the previous Document in documentTransition.setSameOriginTransitions has the following fields :
-    * `element` : A reference to the [Element](https://dom.spec.whatwg.org/#interface-element) in the previous Document.
-    * `propertyMap` : A `record<DOMString, any>` provided by the developer to pass any opaque contextual information to the new Document. The value for this map can be any javascript object supported by the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
-    * `metadataOnly` : A boolean indicating whether the UA should skip capturing the element snapshot, defaults to false. This is purely a performance optimization when a visually identical element is present in both Documents, which would be a common scenario for paired transitions.
+If exactly one of `newElement` or `previousElement` is set, this is an enter or exit transition respectively. The exact animation itself is defined based on `transitionType`. If both `newElement` and `previousElement` are set, this is a paired transition with explicit start and end state. The details for element snapshots and how they are interpolated during the transition will be captured in a subsequent doc. TODO : Link when the doc is ready.
 
-* The `handleTransition` event provides the information for a cached element from the previous Document using a new interface called `SharedElement`. It has a `record<DOMString, any> getPropertyMap()` API to retrieve the `propertyMap` value above. This `SharedElement` can then be referenced in `ElementTransition` for declaring exit and/or paired transitions.
+### Transition Lifecycle
+The main entry point for the API in the new Document is the `handleTransition` [event](https://dom.spec.whatwg.org/#interface-event). This event is dispatched prior to first paint of a new Document if the previous Document had initialized a transition using `setSameOriginTransitionElements` (TODO : Should this survive across redirects if the final URL is same origin). Script can register for this event using `document.documentTransition` which is an [Event Target](https://dom.spec.whatwg.org/#interface-eventtarget). TODO : Figure out the exact timing of this event in the Document's lifecycle.
 
-#### Hierarchical Properties
-The web platform has multiple concepts which define the coordinate space in which the animatable properties referenced above should be interpolated : [Containing Block](https://developer.mozilla.org/en-US/docs/Web/CSS/Containing_block), [3D rendering context](https://drafts.csswg.org/css-transforms-2/#3d-rendering-contexts); the order in which the elements are stacked : [Stacking context](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_Positioning/Understanding_z_index/The_stacking_context); and the element to which an effect like backdrop-filter is applied : [Backdrop Root](https://drafts.fxtf.org/filter-effects-2/#BackdropRoot). All these concepts are defined based on where an element fits in the DOM hierarchy. These are tricky to reason about in the context of a transition because :
+The `handleTransition` event has the following fields :
 
-* It is desirable to change the ancestor for these concepts during the transition. For example, an element may be clipped by the viewport instead of an ancestor element as it animates to exit the screen.
+* `previousUrl` : The URL for the previous Document which initiated this transition.
 
-* Paired transitions are executed by creating a combined image for elements in the two trees on which the animated properties are applied. Should the transition switch to using a parent stacking context for the shared element in the new Document when a transition starts?
+* `previousElements` : A list of `PreviousDocumentElement`s. These map 1:1 with the list of `CacheElement` passed to `setSameOriginTransitionElements`.
 
-The following steps define the behaviour of how content from the two Documents is drawn together during the transition. The aim is to avoid an element’s visual representation abruptly changing at transition start/end for common use-cases :
+This event also has an API to start the transition : `void startTransition(Promise<sequence<ElementTransition>>)`. The precise semantics of this API are described below :
 
-* We assume that the dimensions for the initial containing block for both Documents is the same. If this changes, for example because the user resizes the browser window before the transition finishes, the transition is aborted.
+* The browser keeps displaying visuals for the previous Document until the `handleTransition` event is dispatched. If no call to `startTransition` is made by an [Event Listener](https://dom.spec.whatwg.org/#callbackdef-eventlistener), the transition is aborted.
 
-* During the transition, the UA creates a new root element (hidden from script), referred to as `TransitionRoot` which establishes the root stacking context and containing block. The background color for the `TransitionRoot` is the same as the background color for the root element in the new Document. By default, all shared elements (including root elements from both Documents) are direct descendants of the `TransitionRoot`.
+* The `startTransition` API takes a list of `ElementTransition`s. These transition objects specify the set of animations to execute for the transition. We use a promise based API here to allow the new Document to asynchronously prepare the new Document. Since a page load frequently involves activity like network fetches or disk reads, allowing the prepare to be asynchronous is important.
 
-* TODO : Clarify the details of how properties are computed and animated during the transition.
+* The browser continues to display visuals for the previous Document until the promise provided in `startTransition` resolves. The first rendering lifecycle update after this step marks the new Document's first paint and transition start.
 
-* We also need to define the order in which elements which share a stacking context are rendered. The current proposal allows the developer to explicitly control this by providing an ordered list (back-to-front) of `ElementTransition` in the `handleTransition.initiateTransition` API. But it’s unclear if this control is unnecessary complexity. The common use-case would be to maintain the same visual order for elements within the previous and new Document to avoid abrupt changes when the transition starts and ends.
+We also provide a `transitionEnd` event to be notified when all animations associated with a transition have finished executing. There should ideall be no visual changes to DOM state between the transition start step above and `transitionEnd` event.
 
-A customization option for future iterations is enabling persistence of hierarchical relationships between elements during a transition. Let’s say a Document has a shared element A which has descendant shared elements B, C, D. The developer can specify whether A should form a parent stacking context and containing block for its descendants during the transition. This creates a tree of stacking contexts with elements from both Documents rooted at `TransitionRoot`.
+
+### Single Page App API
+The API for same-document transitions (or SPAs) aligns very closely with the MPA API. The difference is in the API endpoints for each step described above. The following code-snippet shows a sample root transition :
+
+```
+async function doRootTransition() {
+    await document.documentTransition.performSameDocumentTransition({ 
+        cacheElements : [ {element : document.html} ],
+        startCallback : startTransition
+    });
+}
+
+async function startTransition(previousElements) {
+    await waitForNextScene();
+    
+    let oldRootAnimation = {previousElement : previousElements[0],
+                            transitionType : "slide-fade-left"};
+    let newRootAnimation = {newElement : document.html,
+                            transitionType : "none"};
+    
+    return [oldRootAnimation, newRootAnimation];
+}
+```
+
+* The transition is initiated by calling the `performSameDocumentTransition` API. This API takes a list of `CacheElement` which should be cached by the browser for this transition. This is equivalent to initiating a navigation after issuing setSameOriginTransitionElements for a cross-document transition.
+
+* The `performSameDocumentTransition` API also takes a `startCallback` which is invoked by the browser once the step above to capture snapshots is finished. This is equivalent to the `handleTransition` event for cross-document transitions.
+
+* The `startCallback` receives a list of `PreviousDocumentElement`s. The semantics are similar to the `previousElements` field on `handleTransition` event. This callback returns a list of `ElementTransition`s to configure the animations to execute the transition. We use a promise based API here as well to allow asynchronous work for loading the next scene. The browser stops performing visual updates from DOM changes after invoking the `startCallback`. The updates are resumed when the promised returned by this callback resolves. This is equivalent to the `startTransition` API on `handleTransition` event.
+
+* The `performSameDocumentTransition` API returns a promise which is resolved once the associated transition is finished. This is equivalent to the `transitionEnd` event for cross-document transitions.
+
+## Open Questions
+
+* The type of navigations the previous Document will be allowed to define a transition for should be similar to the ones supported by app-history’s [navigate event](https://github.com/WICG/app-history#restrictions-on-firing-canceling-and-responding). The most likely exception will be back/forward buttons which currently do not fire a `navigate` event. So a common pattern would be to use this API in response to the navigate event.
+
+* Both cross-document and same-document transitions require deferring first paint for the new scene which is controlled by script. It's unclear what or if this should have an upper bound.
+
+* Since transitions execute with a live new Document, the state of new Elements can change while a transition is in progress. For example, an image element used in the transition receives more data or is detached from the DOM. It's unclear whether the behaviour here needs to be defined.
+
 
 ## Security Considerations
 Since the design above is limited to same-origin transitions, the only security constraint is to ensure that script can never read pixel content for element snapshots. This is necessary since the Document may embed cross-origin content (iframes, CORS resources, etc.) and multiple restricted user information (visited links history, dictionary used for spell check, etc.)
@@ -181,3 +401,17 @@ Subsequent designs should cover the cross-origin use-case and address design con
 * Referencing elements : Same-origin relies on sharing information across documents to reference elements between them, which won’t be an option for cross-origin transitions. This should leverage existing work for [scroll-to-css-selector](https://github.com/bryanmcquade/scroll-to-css-selector).
 
 * Time to First Paint : Same-origin relies on the new Document using an explicit signal to indicate when it is ready for display, which won’t be an option for cross-origin transitions. This will likely need to rely on UA heuristics to decide when the transition is started, especially with an opt-out approach.
+
+## Glossary
+
+* Previous Document : The Document the user is viewing when a navigation is initated.
+
+* New Document : The Document which will be current in the session history when a navigation is committed.
+
+* Root transition : An animation to transition the content for root element of both Documents.
+
+* Enter transition : An animation which specifies how an element in the previous Document exits the screen.
+
+* Exit transition : An animation which specifies how an element in the new Document enters the screen.
+
+* Snapshot : A pixel copy for a DOM subtree.
