@@ -39,6 +39,16 @@ Cross-origin transitions have additional security/privacy constraints. In partic
 
 An important assumption in the design of this feature is that it's reasonable to limit customization options for cross-origin transitions to make it easier for UAs to enforce the constraints above. But the API/implementation should strive to not unnecessarily limit capabilities for same-origin transitions due to cross-origin constraints.
 
+## Glossary
+| Term | Description |
+| ------------- | ------------- |
+| Previous Document  | The Document the user is viewing when a navigation is initated.  |
+| New Document  | The Document which will be current in the session history when a navigation is committed. |
+| Root transition | An animation to transition the content for root element of both Documents. |
+| Exit transition | An animation which specifies how an element in the previous Document exits the screen. |
+| Enter transition | An animation which specifies how an element in the new Document enters the screen. |
+| Snapshot | A pixel copy for a DOM subtree. |
+
 ## Sample Code
 This section explains how the feature can be used to add transitions to MPAs. There are a set of use-cases and edge cases to consider :
 
@@ -47,7 +57,7 @@ Let's start with a root transition, which adds an animation to the root element 
 
 [![Video Link for Root Element Transition](https://img.youtube.com/vi/mCvvWMIGItY/0.jpg)](https://www.youtube.com/watch?v=mCvvWMIGItY)
 
-The entry point for this API is a new `document.documentTransition` object. The previous Document provides a list of elements which will be animated during the transition. Since this is root transition, this list only includes the `html` element. The result of calling `setSameOriginTransitionElements` below is that the browser caches a copy of the pixels (snapshot) currently present on the screen when a navigation to `foo.com/a.html` is initiated.
+The entry point for this API is a new `document.documentTransition` object. The previous Document provides a list of elements which will be animated during the transition. Since this is root transition, this list only includes the `html` element. The result of calling `documentTransition.setSameOriginTransitionElements` as illustrated below is that the browser caches a copy of the pixels (snapshot) for the `html` element when a navigation to `foo.com/a.html` is initiated.
 
 ```
 // The list of elements is keyed on url. When a user navigates to
@@ -59,15 +69,15 @@ document.documentTransition.setSameOriginTransitionElements(
   });
 ```
 
-When the new Document loads, script registers an event listener to be notified if a transition was initiated by the previous Document. The exact Document lifecycle stage before which this event should be registered is TBD.
+Now we need to add some code on the new Document. When the new Document loads, script registers a listener for a new event type called `handleTransition`. The event is dispatched if a transition was initiated by the previous Document. The exact Document lifecycle stage before which this event should be registered is TBD.
 
 ```
 document.documentTransition.addEventListener(
     “handleTransition”, e => {
-        e.startTransition(transitionFrom(e.previousUrl, e.previousElements));
+        e.startTransition(provideTransitionFrom(e.previousUrl, e.previousElements));
     });
 
-async function transitionFrom(previousUrl, previousElements) {
+async function provideTransitionFrom(previousUrl, previousElements) {
     // Wait for the image on the new page to load before
     // starting the transition.
     await waitForImageLoad();
@@ -93,9 +103,9 @@ Adding an event listener for `handleTransition` will result in execution of foll
 
 * The `handleTransition` event has a field `previousURL` : the URL for the previous Document. And `previousElements` : the list of placeholders for elements passed to `setSameOriginTransitionElements`, clarified in [API Proposal](#api-proposal).
 
-* The `startTransition` API on `handleTransition` event takes a promise to allow script to asynchronously prepare the new Document for first paint. The browser continues to display old content until the promise passed to this API resolves.
+* The `handleTransition` event has an API `startTransition` which takes the list of elements to animate and the type of animation. In the example above, `provideTransitionFrom` returns the root elements for the previous and new Document. Also note that the animation done is based on `transitionType` specified with each element. This is a new enum with a pre-defined list of animation patterns.
 
-* The animations executed on root elements for both Documents during the transition are based on the `transitionType` specified for each.
+* The `startTransition` API takes a promise to allow script to asynchronously prepare the new Document for first paint. The browser continues to display old content until the promise passed to this API resolves.
 
 ### Single Element Transition
 We can also set a separate animation for parts of the page by specifying them separately in the API. Let's say we wanted the header to slide up during this transition :
@@ -117,10 +127,10 @@ The `handleTransition` event on the new Document specifies the animation for the
 ```
 document.documentTransition.addEventListener(
     “handleTransition”, e => {
-        e.startTransition(transitionFrom(e.previousUrl, e.previousElements));
+        e.startTransition(provideTransitionFrom(e.previousUrl, e.previousElements));
     });
 
-async function transitionFrom(previousUrl, previousElements) {
+async function provideTransitionFrom(previousUrl, previousElements) {
     ...
     
     let headerAnimation = 
@@ -151,10 +161,10 @@ And specify a transition which associates these elements in the `handleTransitio
 ```
 document.documentTransition.addEventListener(
     “handleTransition”, e => {
-        e.startTransition(transitionFrom(e.previousUrl, e.previousElements));
+        e.startTransition(provideTransitionFrom(e.previousUrl, e.previousElements));
     });
 
-async function transitionFrom(previousUrl, previousElements) {
+async function provideTransitionFrom(previousUrl, previousElements) {
     await waitForImageLoad();
     
     ...
@@ -171,7 +181,7 @@ async function transitionFrom(previousUrl, previousElements) {
 Performing a seamless transition requires deferring first paint until the new Document is ready for display. Web authors should ensure that this delay is reasonable and gracefully handle slow network activity. A potential way to do this could be to update the transition based on whether a resource could be fetched within a deadline. Let's take the example of [Paired Element Transition](#paired-element-transition) again :
 
 ```
-async function transitionFrom(previousUrl, previousElements) {
+async function provideTransitionFrom(previousUrl, previousElements) {
     ...
     
     bool imageLoaded = await waitForImageLoadWithTimeout();
@@ -197,7 +207,7 @@ A transition may need to be modified based on the layout of the new document for
 [![Video Link for Shared Element Offscreen Transition](https://img.youtube.com/vi/byFWwcqm0RQ/0.jpg)](https://www.youtube.com/watch?v=byFWwcqm0RQ)
 
 ```
-async function transitionFrom(previousUrl, previousElements) {
+async function provideTransitionFrom(previousUrl, previousElements) {
     ...
 
     let elem = document.getElementById("dog");
@@ -241,7 +251,7 @@ document.documentTransition.setSameOriginTransitionElements(
 The new Document decides the transition type based on this information :
 
 ```
-async function transitionFrom(previousUrl, previousElements) {
+async function provideTransitionFrom(previousUrl, previousElements) {
     ...
     let type = "none";
     switch (previousElements[0].getPropertyMap()["type"]) {
@@ -269,7 +279,7 @@ async function transitionFrom(previousUrl, previousElements) {
 ```
 
 ### Integration with App History API
-This feature integrates well with the app-history API which provides developers with a central framework for all navigation related logic. The following code-snippet provides an example :
+This feature integrates well with the [app-history API](https://github.com/WICG/app-history) which provides developers with a central framework for all navigation related logic. The following code-snippet provides an example :
 
 ```
 appHistory.addEventListener("navigate", e => {
@@ -401,17 +411,3 @@ Subsequent designs should cover the cross-origin use-case and address design con
 * Referencing elements : Same-origin relies on sharing information across documents to reference elements between them, which won’t be an option for cross-origin transitions. This should leverage existing work for [scroll-to-css-selector](https://github.com/bryanmcquade/scroll-to-css-selector).
 
 * Time to First Paint : Same-origin relies on the new Document using an explicit signal to indicate when it is ready for display, which won’t be an option for cross-origin transitions. This will likely need to rely on UA heuristics to decide when the transition is started, especially with an opt-out approach.
-
-## Glossary
-
-* Previous Document : The Document the user is viewing when a navigation is initated.
-
-* New Document : The Document which will be current in the session history when a navigation is committed.
-
-* Root transition : An animation to transition the content for root element of both Documents.
-
-* Enter transition : An animation which specifies how an element in the previous Document exits the screen.
-
-* Exit transition : An animation which specifies how an element in the new Document enters the screen.
-
-* Snapshot : A pixel copy for a DOM subtree.
