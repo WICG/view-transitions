@@ -29,10 +29,6 @@ function handleTransition() {
     document.documentTransition.start().then(() => console.log("transition finished"));
   });
 }
-
-async function changeBodyBackground() {
-    ...
-}
 ```
 
 If script simply calls `changeBodyBackground()`, then the `body` element's
@@ -44,9 +40,6 @@ happen:
   currently present on the screen. When saving is done, the promise resolves.
 * After the promise resolves, we call `changeBodyBackground()`, which changes
   the `body` element's background to blue, and start the document transition.
-  The browser defers painting any updates to the DOM until
-  `documentTransition.start` is called. This allows setting up the final frame
-  for the transition asynchronously. 
 * Because the effect specified is "reveal-left", the saved pixels slide to the
   left, revealing the new blue background body on the page. The similar effect
   is possible regardless of the complexity of the page or the DOM changes
@@ -63,6 +56,35 @@ Below is a video of some of the sample transitions:
 
 A similar effect could be achieved in the MPA case, although the API is likely
 to differ slightly.
+
+#### Asynchronous Updates
+In some cases switching to the new state can't be done synchronously. Consider
+the case where you're changing the background image instead of color in the
+example above. You need to wait until the image loads before the transition
+can be started :
+
+```js
+function changeBodyBackground() {
+  document.body.style = "background-image: url('new.jpg')";
+}
+
+function handleTransition() {
+  document.documentTransition.prepare({
+    rootTransition: "reveal-left",
+  }).then(async () => {
+    await waitForNewImage();
+    changeBodyBackground();
+    document.documentTransition.start().then(() => console.log("transition finished"));
+  });
+}
+```
+The browser defers painting any updates until `documentTransition.start` is called.
+Any changes you make to the DOM won't be visible to the user. This allows setting up the
+final frame for the transition asynchronously.
+
+Note that `documentTransition.start` must be called within a reasonable deadline after
+the promise resolves (currently 4 seconds). Otherwise the browser resumes drawing without
+a transition.
 
 #### Supported Effects
 
