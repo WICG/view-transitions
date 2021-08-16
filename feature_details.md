@@ -26,7 +26,7 @@ Since live DOM needs to be present for both states at the same time, it's common
 We want to make authoring such transitions easy with a native API that offers some level of customization.
 
 ### Multi Page Apps (MPA)
-It’s not possible to have these transitions today for multi-page apps (or same-origin navigations). In fact, a lack of this ends up being one of the drivers for web authors to create SPAs. We want this API to enable authoring transitions within an MPA with a similar feature set as the SPA case above. 
+It’s not possible to have these transitions today for multi-page apps (a.k.a. same-origin navigations). In fact, a lack of this ends up being one of the drivers for web authors to create SPAs. We want this API to enable authoring transitions within an MPA with a similar feature set as the SPA case above. 
 
 ### Cross Origin Transitions
 Cross-origin transitions are infeasible similar to MPAs. A common use-case for this is content aggregator sites (search engines, social media sites, news aggregators, etc.). These sites frequently display a hero image/header which could be animated during the navigation to provide a seamless transition.
