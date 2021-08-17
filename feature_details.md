@@ -202,7 +202,7 @@ async function provideTransitionFrom(previousUrl, previousElements) {
 ### New Document Layout
 A transition may need to be modified based on the layout of the new document for a given viewport size. Let's pick up the paired transition example again with a smaller browser window, which doesn't look as nice when the new paired element is partially onscreen :
 
-[![Video Link for Shared Element Offscreen Transition](https://img.youtube.com/vi/byFWwcqm0RQ/0.jpg)](https://www.youtube.com/watch?v=byFWwcqm0RQ)
+[![Video Link for Shared Element Offscreen Transition](https://img.youtube.com/vi/uBtDyw_2QVw/0.jpg)](https://www.youtube.com/watch?v=uBtDyw_2QVw)
 
 ```
 async function provideTransitionFrom(previousUrl, previousElements) {
@@ -230,7 +230,7 @@ async function provideTransitionFrom(previousUrl, previousElements) {
 ### Old Document State
 Customizing a transition may depend on state from the old Document. The feature enables this by letting the web author pass contextual information between Documents. The following example considers a case where we use the source of navigation to decide the transition :
 
-[![Video Link for Shared Element Offscreen Transition](https://img.youtube.com/vi/Cxz7ezUiGv8/0.jpg)](https://www.youtube.com/watch?v=Cxz7ezUiGv8)
+[![Video Link for Old Dom State](https://img.youtube.com/vi/6eGmjn0o_3Q/0.jpg)](https://www.youtube.com/watch?v=6eGmjn0o_3Q)
 
 The old Document passes info about which button click initiated the navigation :
 
