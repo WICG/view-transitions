@@ -57,6 +57,35 @@ Below is a video of some of the sample transitions:
 A similar effect could be achieved in the MPA case, although the API is likely
 to differ slightly.
 
+#### Asynchronous Updates
+In some cases switching to the new state can't be done synchronously. Consider
+the case where you're changing the background image instead of color in the
+example above. You need to wait until the image loads before the transition
+can be started :
+
+```js
+function changeBodyBackground() {
+  document.body.style = "background-image: url('new.jpg')";
+}
+
+function handleTransition() {
+  document.documentTransition.prepare({
+    rootTransition: "reveal-left",
+  }).then(async () => {
+    await waitForNewImage();
+    changeBodyBackground();
+    document.documentTransition.start().then(() => console.log("transition finished"));
+  });
+}
+```
+The browser defers painting any updates until `documentTransition.start` is called.
+Any changes you make to the DOM won't be visible to the user. This allows setting up the
+final frame for the transition asynchronously.
+
+Note that `documentTransition.start` must be called within a reasonable deadline after
+the promise resolves (e.g. 4 seconds). Otherwise the browser resumes drawing without
+a transition.
+
 #### Supported Effects
 
 The following is a list of effects that could be supported for root
