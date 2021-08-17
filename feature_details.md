@@ -55,7 +55,7 @@ This section explains how the feature can be used to add transitions to MPAs. Th
 ### Root Transition
 Let's start with a root transition, which adds an animation to the root element of previous and new Documents. Below is a video of the transition we want to create :
 
-[![Video Link for Root Element Transition](https://img.youtube.com/vi/mCvvWMIGItY/0.jpg)](https://www.youtube.com/watch?v=mCvvWMIGItY)
+[![Video Link for Root Element Transition](https://img.youtube.com/vi/j1EybZbfG5g/0.jpg)](https://www.youtube.com/watch?v=j1EybZbfG5g)
 
 The entry point for this API is a new `document.documentTransition` object. The previous Document provides a list of elements which will be animated during the transition. Since this is root transition, this list only includes the `html` element. The result of calling `documentTransition.setSameOriginTransitionElements` as illustrated below is that the browser caches a copy of the pixels (snapshot) for the `html` element when a navigation to `foo.com/a.html` is initiated.
 
@@ -142,7 +142,7 @@ async function provideTransitionFrom(previousUrl, previousElements) {
 ### Paired Element Transition
 In some cases a semantically or visually same element is present in both Documents. We can set up an animation which automatically animates this element from it's old state to the new state :
 
-[![Video Link for Shared Element Transition](https://img.youtube.com/vi/GekohitaU5M/0.jpg)](https://www.youtube.com/watch?v=GekohitaU5M)
+[![Video Link for Shared Element Transition](https://img.youtube.com/vi/n9zxarKTpQ8/0.jpg)](https://www.youtube.com/watch?v=n9zxarKTpQ8)
 
 Similar to the case above, update the list in `setSameOriginTransitionElements` to include the animated image :
 
