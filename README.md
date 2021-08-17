@@ -25,7 +25,7 @@ function handleTransition() {
   document.documentTransition.prepare({
     rootTransition: "reveal-left",
   }).then(() => {
-    await changeBodyBackground();
+    changeBodyBackground();
     document.documentTransition.start().then(() => console.log("transition finished"));
   });
 }
@@ -83,7 +83,7 @@ Any changes you make to the DOM won't be visible to the user. This allows settin
 final frame for the transition asynchronously.
 
 Note that `documentTransition.start` must be called within a reasonable deadline after
-the promise resolves (currently 4 seconds). Otherwise the browser resumes drawing without
+the promise resolves (e.g. 4 seconds). Otherwise the browser resumes drawing without
 a transition.
 
 #### Supported Effects
