@@ -42,8 +42,8 @@ An important assumption in the design of this feature is that it's reasonable to
 ## Glossary
 | Term | Description |
 | ------------- | ------------- |
-| Previous Document  | The Document the user is viewing when a navigation is initated.  |
-| New Document  | The Document which will be current in the session history when a navigation is committed. |
+| Previous Document  | The Document the user is viewing when a navigation is initated. For the SPA case, this is effectively the old version of the DOM. |
+| New Document  | The Document which will be current in the session history when a navigation is committed. For the SPA case, this is effectively the new version of the DOM. |
 | Root transition | An animation to transition the content for root element of both Documents. |
 | Exit transition | An animation which specifies how an element in the previous Document exits the screen. |
 | Enter transition | An animation which specifies how an element in the new Document enters the screen. |
@@ -103,14 +103,12 @@ Adding an event listener for `handleTransition` will result in execution of foll
 
 * The `handleTransition` event has a field `previousURL` : the URL for the previous Document. And `previousElements` : the list of placeholders for elements passed to `setSameOriginTransitionElements`, clarified in [API Proposal](#api-proposal).
 
-* The `handleTransition` event has an API `startTransition` which takes the list of elements to animate and the type of animation. In the example above, `provideTransitionFrom` returns the root elements for the previous and new Document. Also note that the animation done is based on `transitionType` specified with each element. This is a new enum with a pre-defined list of animation patterns.
-
-* The `startTransition` API takes a promise to allow script to asynchronously prepare the new Document for first paint. The browser continues to display old content until the promise passed to this API resolves.
+* The `handleTransition` event has an API `startTransition` which takes a promise to allow script to asynchronously prepare the new Document for first paint. The browser continues to display old content until the promise passed to this API resolves. On resolution, this promise provides a list of elements to animate and the type of animation. In the example above, `provideTransitionFrom` returns the root elements for the previous and new Document. Also note that the animation done is based on `transitionType` specified with each element. This is a new enum with a pre-defined list of animation patterns.
 
 ### Single Element Transition
 We can also set a separate animation for parts of the page by specifying them separately in the API. Let's say we wanted the header to slide up during this transition :
 
-TODO : Add rough implementation for video.
+*TODO : Add rough implementation for video.*
 
 Add the elements which will animate independently in the API call on the previous Document. The result is that the browser caches a separate pixel copy for each element in the list.
 
@@ -298,7 +296,7 @@ The proposal below is roughly divided into 3 parts : the APIs used on the old an
 ### Previous Document
 The first part of the API is a dictionary : `CacheElement`. This is used to specify elements to cache from the previous Document. This dictionary has the following parameters :
 
-* `element` : A reference to the [Element](https://dom.spec.whatwg.org/#interface-element). TODO : What should we do if layout for this element is disabled when a navigation is initiated? 
+* `element` : A reference to the [Element](https://dom.spec.whatwg.org/#interface-element). *TODO : What should we do if layout for this element is disabled when a navigation is initiated?*
 
 * `propertyMap` : A `record<DOMString, any>` provided by the developer to pass any opaque contextual information to the new Document. The navigation trigger in [Old Document State](#old-document-state) is an example of such data. Allowing any javascript object supported by the [structured clone algorithm](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm) as a value for this map would provide maximum flexibility. The reason for limiting to data cloneable data types is to permit serialization of these objects, if necessary.
 
@@ -314,6 +312,8 @@ document.documentTransition.setSameOriginTransitionElements({
 ```
 
 Special handling is needed for a list of elements : `[CacheElement_Parent, CacheElement_Child]` where `CacheElement_Child` is a descendant of `CacheElement_Parent`. The parent element's snapshot excludes content for any descendant elements. The space covered by the descendant element shows the background which was earlier occluded by the descendant element.
+
+*TODO: Clarify the syntax for nextURL. This should allow for [URL patterns](https://github.com/WICG/urlpattern).*
 
 ### New Document
 #### Referencing Elements
@@ -341,7 +341,7 @@ The parameters to confugure an instance of Single Element or Paired Element Tran
 If exactly one of `newElement` or `previousElement` is set, this is an enter or exit transition respectively. The exact animation itself is defined based on `transitionType`. If both `newElement` and `previousElement` are set, this is a paired transition with explicit start and end state. The details for element snapshots and how they are interpolated during the transition will be captured in a subsequent doc. TODO : Link when the doc is ready.
 
 ### Transition Lifecycle
-The main entry point for the API in the new Document is the `handleTransition` [event](https://dom.spec.whatwg.org/#interface-event). This event is dispatched prior to first paint of a new Document if the previous Document had initialized a transition using `setSameOriginTransitionElements` (TODO : Should this survive across redirects if the final URL is same origin). Script can register for this event using `document.documentTransition` which is an [Event Target](https://dom.spec.whatwg.org/#interface-eventtarget). TODO : Figure out the exact timing of this event in the Document's lifecycle.
+The main entry point for the API in the new Document is the `handleTransition` [event](https://dom.spec.whatwg.org/#interface-event). This event is dispatched prior to first paint of a new Document if the previous Document had initialized a transition using `setSameOriginTransitionElements`. *TODO : Should this survive across redirects if the final URL is same origin?* Script can register for this event using `document.documentTransition` which is an [Event Target](https://dom.spec.whatwg.org/#interface-eventtarget). *TODO : Figure out the exact timing of this event in the Document's lifecycle. We also need to ensure that we allow script to register the event before first paint of the new Document.*
 
 The `handleTransition` event has the following fields :
 
