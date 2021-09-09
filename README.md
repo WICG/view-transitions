@@ -10,6 +10,9 @@ the [Material Design Principles](https://material.io/design/motion/the-motion-sy
 The intent is to support transitions similar to
 [Android Activity Transitions](https://developer.android.com/training/transitions/start-activity).
 
+The details below use code snippets based on the API supported in Chromium and shipped with the
+latest Chrome canary.
+
 ### Root Transitions
 
 The proposal can be split into two parts: a root transition, and a shared
@@ -151,6 +154,33 @@ Below is an example that utilizes both shared and root element transitions to
 achieve the effect.
 
 [![Video Link for Shared Element Transitions](https://img.youtube.com/vi/K7oVrXlVsgE/0.jpg)](https://www.youtube.com/watch?v=K7oVrXlVsgE)
+
+### Configuring Transitions
+The browser picks a default duration for root and shared element transitions. The animations
+are also started at the same time. These paramters can be customized with the following hooks
+in the API:
+
+```js
+<script>
+function handleTransition() {
+  document.documentTransition.prepare({
+    rootTransition: "reveal-left",
+    rootConfig: {duration: "500", delay: "250"},
+    sharedElements: [e1, e2, e3],
+    sharedElementsConfig: [{duration: "500", delay: "250"}, {}, {duration: "500"}]
+  }).then(() => {
+    changeBodyBackground();
+    document.documentTransition.start({ sharedElements: [newE1, newE2, newE3] }).then(
+      () => console.log("transition finished"));
+  });
+}
+...
+</script>
+```
+
+* All time values are interpreted in milliseconds and must be between 0 and 5s (inclusive).
+* The delay is from the first frame after the start of the transition.
+* The length of |sharedElementsConfig| should be the same as |sharedElements|.
 
 ## Multi-page support
 
