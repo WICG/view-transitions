@@ -178,9 +178,9 @@ function handleTransition() {
 </script>
 ```
 
-* All time values are interpreted in milliseconds and must be between 0 and 5s (inclusive).
-* The delay is from the first frame after the start of the transition.
-* The length of |sharedElementsConfig| should be the same as |sharedElements|.
+* All time values are interpreted in milliseconds and must be between 0 and 5000ms (inclusive).
+* The delay starts from the first frame after the start of the transition.
+* The length of |sharedElementsConfig| must be the same as |sharedElements|.
 
 ## Multi-page support
 
