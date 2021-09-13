@@ -182,6 +182,9 @@ function handleTransition() {
 * The delay starts from the first frame after the start of the transition.
 * The length of |sharedElementsConfig| must be the same as |sharedElements|.
 
+Note that a seperate sequence to specify configuration is not intended to be the final API shape. It was
+added to expose functionality in a backwards compatible way while the API design is in progress.
+
 ## Multi-page support
 
 With some work, the above effects can be achieved with existing animation
