@@ -210,7 +210,50 @@ Developers can customize and specify animations for the transition by targeting 
 
 For specifying animations using script, we will expose the [Animatable interface](https://drafts.csswg.org/web-animations/#the-animatable-interface-mixin) for the same pseudo elements.
 
-# Future Work
+An API is also needed to customize the paint order of these elements.
 
+## Live Animatable Properties
+A common capability desirable for multiple use-cases during transitions was to interpolate styles like border-radius that change the element's shape. The [container transform](https://material.io/design/motion/the-motion-system.html#container-transform) example show a visual demo of that. Painting properties like the element's border within its image when using the element() function makes this difficult.
+
+Developers can control which properties are painted in the element vs interpolated by removing them from the shared element during the transition and adding them to the container instead. A new pseudo class is introduced which is applied when an element is in transition state, i.e., its being displayed in the Transition DOM. The following is an example of developer provided CSS to animate an element's border, border-radius and box-shadow during the transition. A working example of this using the existing element() function in Firefox is [here](https://jsbin.com/fifupusuvo/1/edit?html,output).
+
+Note : Supporting this requires the browser to copy the complete ComputedStyle for the pseudo elements in the Transition DOM from outgoing to incoming document, as opposed to only the [computed properties](#computed-properties).
+
+```
+.shared-element {
+  border: 10px solid black;
+  border-radius: 10% 10%;
+  box-shadow: 0px 0px 10px;
+  
+  &:transition {
+    /* Retain the border to ensure it is painted transparent but the box size is unchanged. */
+    border: 10px solid transparent;
+    border-radius: none;
+    box-shadow: none;
+  }
+}
+
+::shared-container(#shared-id) {
+  border: 10px solid black;
+  border-radius: 10% 10%;
+  box-shadow: 0px 0px 10px;
+}
+
+::shared-old(#shared-id) {
+  top: -10px;
+  left: -10px;
+}
+```
+
+An alternate approach to this is to support this natively in the browser by introducing a new content-element() function. This function would behave similar to the element() function except skipping the following properties when painting the element: box decorations and visual effects which generate a stacking context. The image will also be sized to the element's content-box (as opposed to the border-box used by the element() function). The motivation for supporting this natively would be to ensure ease of use for developers.
+
+# Security/Privacy Considerations
+The security considerations below are limited to same-origin transitions :
+
+* Script can never read pixel content for images generated using the element() function. This is necessary since the document may embed cross-origin content (iframes, CORS resources, etc.) and multiple restricted user information (visited links history, dictionary used for spell check, etc.)
+* The Live Animatable Properties could reference resources which are restricted in the incoming document for an MPA navigation. For example, the outgoing document may use a cross-origin image for border-image which can't be accessed by the incoming document due to differences in [COEP](https://wicg.github.io/cross-origin-embedder-policy/). Fetching these styles will fail on the incoming document. For same-origin navigations, the developer already has knowledge of the cross-origin policy on the incoming document. They can ensure not to reference cross-origin resources in the properties made live.
+
+# Related Reading
+An aspect of the feature that needs to be defined is the [type of navigations](https://github.com/WICG/app-history#appendix-types-of-navigations) that the outgoing page can configure. We expect this will closely align with the navigations that can be observed by the page using app-history's [navigate event](https://github.com/WICG/app-history#restrictions-on-firing-canceling-and-responding).
 
 [^1]: Note that for MPA this should be the rAF for the new Document's first rendering lifecycle update. Standardization of this behaviour is a part of the [renderblocking](https://github.com/whatwg/html/issues/7131) proposal.
