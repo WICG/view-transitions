@@ -12,240 +12,235 @@ A visual demo of the transition patterns targeted by this feature are [here](htt
 
 These transitions should be feasible in SPAs (Single Page Apps) and MPAs (Multi Page Apps).
 
-# Glossary
-
-| Term | Description |
-| ------------- | ------------- |
-| Outgoing Document  | The document the user is viewing when a navigation is initated. For the SPA case, this is effectively the old version of the DOM. |
-| Incoming Document  | The document which will be current in the session history when a navigation is committed. For the SPA case, this is effectively the incoming version of the DOM. |
-
-# Concepts
-The design for this feature is built using the following concepts:
-
-## Transition DOM Representation
-During a transition, the browser creates and animates a post layout representation of the DOM. This representation is created by generating/caching the following state for a set of elements (referred to as "shared elements") specified by the developer.
-
-### Painted Content
-A painted representation of an element animated as an atomic unit/layer during the transition. The representation effectively provides the element's content as a rendered image. This is defined using the existing [element()](https://drafts.csswg.org/css-images-4/#element-notation) function. The image animated during the transition is live for elements in the incoming document as defined in the spec. And a static version is cached by the browser for elements in the outgoing document.
-
-This proposal outlines the following modifications to the element() spec for ease of implementation:
-* The snapshotted element must have paint containment (contain:paint) to ensure the element is the containing block for all positioned descendents and generates a stacking context.
-* The snapshotted element must disallow fragmentation (break-inside:avoid).
-
-Generating this for the root element needs to be refined. The following is the list of special cases to consider there :
-* The natural size for the generated image is the visual viewport bounds.
-* When creating the image, the element is drawn on a canvas with the background color of the document.
-
-### Computed Properties
-The DOM state required to display the list of images/layers generated above to close visual fidelity with their rendering in the actual DOM. This is limited to the transform mapping a shared element to its quad in viewport space and the element's border-box size. Similar to painted representation above, this state is live for elements in the incoming document and a static cached version for elements in the outgoing document.
-
-This proposal disallows a shared element to be nested inside another shared element to avoid preserving the hierarchy of these DOM elements and associated properties (transform, clip, effects inherited by descendents). This helps in limiting the scope for the first iteration of this feature.
-
-## Rendering Transition DOM
-The DOM representation referenced above is rendered and animated by creating pseudo elements with the [content](https://drafts.csswg.org/css-content/#content-property) property set to a shared element's painted content, the [transform](https://drafts.csswg.org/css-transforms-1/#propdef-transform) set to the viewport space transform and width/height set to the element's border-box size. These pseudo elements are drawn on top of the document by painting them in the DOM's [top layer](https://fullscreen.spec.whatwg.org/#top-layer) retaining their paint order in the actual DOM.
-
 # Design
-This section describes the high level design for this feature with a tentative API:
+Let's take the example below which shows how the API can be used by a developer to animate the background and a shared element on a same origin navigation (MPA).
 
-## Outgoing Document
-The transition sequence starts with the prepare phase when the browser receives a trigger for a transition. Consider the following snippet of code:
-
-```js
-<div shared-id="shared-elem"></div>
-
-// MPA version.
-addEventListener("navigate", (event) => {
-  document.querySelector(".foo").shared-id="header";
-  document.documentTransition.setData({ version: 123 });
-});
-
-// SPA version.
-function handleTransition() {
-  document.querySelector(".foo").shared-id="shared-elem";
-  document.documentTransition.setData({ version: 123 });
-  document.documentTransition.prepare().then(() => {
-    // Invoked when the prepare phase finishes.
-  });
-}
+### Old Document
+```
+<html>
+<head>
+  <style>
+    body {
+      background-color: blue;
+    }
+    .animated {
+      width: 100px;
+      height: 100px;
+      background-color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="animated" shared-id="shared-header" id="header"></div>
+</body>
+</html>
 ```
 
-The first step is identifying shared elements. A incoming "shared-id" attribute on Element provides a unique identifier to tag shared elements. This can be specified directly in the markup or added in script based on the current document state when the transition is initiated. The setData API takes a structured cloneable to allow developers to pass opaque contextual information for the transition to the incoming document.
-
-In the SPA case, the transition trigger is the prepare API invoked by the developer before updating the DOM to the next scene. In the MPA case, the trigger is a same-origin cross-document navigation. On receiving this trigger the browser performs the following operations:
-* Creates pseudo elements for each shared element (elements with a shared-id) using the live version of state referenced in [Transition DOM Representation](#transition-dom-representation) and adds them to the top layer.
-* Hides the shared element in the actual DOM since its being displayed in the Transition DOM.
-* Starts an async operation to cache this state on the next rendering lifecycle update.
-
-When the async operation finishes, the pseudo elements are switched to use the cached state. In the SPA case, the developer is notified of this event (using the promise returned by initiateTransition() API). The DOM can then be asynchronously updated to the next scene. In the MPA case, the outgoing document can be unloaded after the operation finishes. When the incoming document starts loading, this cached state is copied to the incoming document's top layer.
-
-The cached state will provide the first frame when animations for the transition are started.
-
-## Incoming Document
-When the incoming document is loading, it's top layer keeps displaying the static DOM representation of the outgoing document until it is ready for first render, i.e, the resources required for the first frame have been fetched or timed out. This decision is made as follows:
-
-* In the SPA case, an explicit signal is provided by the developer. For instance, with the start() API below :
-```js
-  document.documentTransition.prepare().then(async () => {
-    await loadNextPage();
-    document.documentTransition.start();
-  });
+### New Document
 ```
-* In the MPA, this decision can be driven by browser heuristics. The eventual goal is to give more control to developers using a [renderblocking](https://github.com/whatwg/html/issues/7131) attribute.
+<html>
+<head>
+  <style>
+    body {
+      background-color: lightblue;
+    }
+    .animated {
+      position: relative;
+      top: 100px;
+      width: 200px;
+      height: 200px;
+      background-color: red;
+    }
+    
+    @keyframes fadeIn {
+      0% {opacity: 0;}
+      100% {opacity: 1;}
+    }
+    
+    @keyframes fadeOut {
+      0% {opacity: 1;}
+      100% {opacity: 0;}
+    }
+    
+    ::shared-new(#root), ::shared-new(#shared-header) {
+      animation: fadeIn 1s;
+    }
 
-Once the incoming document is ready for first render, the browser creates pseudo elements using the live version of shared elements in the incoming DOM similar to the prepare operation in the outgoing DOM. This is deferred until ready for first render to avoid animating to an incremental/unstyled version of the incoming document (within a timeout) as its loading.
-
-Similar to the outgoing document, the shared elements can be tagged directly in the markup or in script. The motivation for the script version is to enable developers to configure the transition using information provided by the outgoing document and resources fetched when the incoming document reaches ready for first render. This is done using the requestAnimationFrame callbacks dispatched during the first rendering lifecycle after ready for first render [^1].
-```js
-requestAnimationFrame(() => {
-  let pendingTransition = document.documentTransition.getPendingTransition();
-  if (pendingTransition.getData().version !== 123)
-    return;
-  // Provides the set of shared-ids for shared elements offered by the outgoing page.
-  if (pendingTransition.offeredSharedElements().has("header"))
-    document.querySelector(".foo").shared-id="header";
-});
-```
-
-Developers can now customize any animation on the Transition DOM. This state is retained until there is an active animation on any pseudo element.
-
-## Transition DOM Details
-For each shared element we create 2 type of pseudo elements that can be targeted by the developer : a container element for the shared element's computed properties (the viewport space transform and border-box size) and a replaced element displaying the shared element's painted content.
-
-One of the motivations behind this split is to provide a stacking context to cross-fade the painted content of incoming and outgoing shared elements. This was necessary to ensure blending identical pixels is a no-op using [plus-lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_plus_lighter) blending. While same-origin transitions could avoid this, it enables future extensibility for cross-origin transitions where cross-fading identical images would be common.
-
-The example below shows the setup of pseudo elements for a navigation sequence :
-
-* Let's take the following example of an outgoing document before the transition trigger.
-```
-HTML (root)
-├───body
-    ├───div "shared-id=A"
-    ├───div "shared-id=B"
+    ::shared-old(#root), ::shared-old(#shared-header) {
+      animation: fadeOut 1s;
+    }
+    
+    ::shared-container(#shared-header) {
+      transition: all 1s ease-in;
+    }
+  </style>
+</head>
+<body>
+  <div class="animated" shared-id="shared-header" id="header"></div>
+</body>
+</html>
 ```
 
-* During the prepare phase, the Transition DOM added to the top-layer is created as follows. shared-container(#shared-id) refers to the container element while shared-old(#shared-id) is the replaced element for the painted content. "root" is a special keyword for the root element. The properties on the shared-container come from the live [computed properties](#computed-properties) of the corresponding shared element.
-```
-top-layer
-├───shared-old(root)
-├───shared-container(#A)
-├        ├───shared-old(#A)
-├───shared-container(#B)
-         ├───shared-old(#B)
-```
+The steps taken by the browser during the transition are as follows.
 
-* The top-layer state is copied to the incoming Document while its loading. The properties on the shared-container come from the cached [computed properties](#computed-properties) of the shared element in the outgoing Document. The following is an example of the incoming document when it is ready for first render.
-```
-HTML (root)
-├───body
-    ├───div "shared-id=A"
-    ├───div "shared-id=C"
-```
+1. When a navigation is initiated on the old Document, create the following pseudo elements in the top layer :
+    a. A container and child replaced element for each element with shared-id attribute. These are identified via ::shared-container(#shared-id) and ::shared-old(#shared-id) respectively.
+    b. A replaced element for the root/html element identified via ::shared-old(#root).
 
-* After ready for first render, the top layer is populated with the Transition DOM for the incoming Document. The properties on the shared-container flip to the live [computed properties](#computed-properties) of the shared element in the incoming Document.
+2. Apply the following UA stylesheet to the pseudo elements on the old page :
 ```
-top-layer
-├───shared-new(root)
-├───shared-old(root)
-├───shared-container(#A)
-├        ├───shared-new(#A)
-├        ├───shared-old(#A)
-├───shared-container(#B)
-         ├───shared-old(#B)
-├───shared-container(#C)
-         ├───shared-new(#C)
-```
-
-The following is an example of a **UA generated stylesheet** to clarify the setup of these elements. These can be overriden by the developer.
-
-```
-// New syntax to style the pseudo container element.
-::shared-container(#A) {
+::shared-old(#root), ::shared-container(#shared-header) {
   position: fixed;
   top: 0px;
   left: 0px;
-  box-sizing: border-box;
 }
 
-// New syntaxt to style pseudo old and new replaced elements.
-::shared-old(#A), ::shared-new(#A) {
+::shared-container(#shared-header) {
+  // Container sized to the element's border-box size.
+  width: 100px;
+  height: 100px;
+  
+  // A transform mapping the element to its quad in viewport space.
+  transform: translate(0px, 0px);
+}
+
+::shared-old(#shared-header) {
   position: absolute;
-  top: 0px;
-  left: 0px;
   width: 100%;
   height: 100%;
+  content: element(#header);
+}
+
+::shared-old(#root) {
+  width: 100vw;
+  height: 100vh;
+  // The output of element() function on the root element.
+  content: element(html);
 }
 ```
 
-## Customizing Transitions
-Developers can customize and specify animations for the transition by targeting the pseudo elements in CSS or script. The following is an example for a shared element transition done using CSS:
+3. Save the output of the element() function for each pseudo element referenced above with the computed size and transform applied to container elements. Then navigate to the new page leaving the last rendered pixels of the old page on screen.
 
+4. When the new page loads, suppress rendering until resources required for first render have been fetched. This state is currently driven by browser heuristics but the eventual goal is to give deterministic control to developers using a [renderblocking](https://github.com/whatwg/html/issues/7131) attribute.
+
+5. Once the page is ready for first render, create the following pseudo elements in the top layer. This is done until the end of rAF callbacks on the page's first rendering lifecycle update[^1] :
+    a. A container and child replaced element for each shared element on the old page using state saved in step 3.
+    b. A container and child replaced element for each element with shared-id attribute on the new page. Only the child element is created if a container with the matching id was already created in step a. above.
+    c. A replaced element for the root/html element identified via ::shared-old(#root).
+
+6. Apply the following UA stylesheet to the pseudo elements on the new page.
 ```
-@keyframes fade-out {
-  from {
-    opacity: 1;
-  }
-}
-::shared-old(#A) {
-  opacity: 0;
-  animation: fade-out;
-  object-fit: cover;
-  object-position: top center;
+::shared-old(#root), ::shared-new(#root), ::shared-container(#shared-header) {
+  position: fixed;
+  top: 0px;
+  left: 0px;
 }
 
-@keyframes fade-in {
-  from {
-    opacity:0;
-  }
+::shared-old(#root), ::shared-new(#root) {
+  width: 100vw;
+  height: 100vh;
+  content: element(html);
 }
-::shared-old(#A) {
-  opacity: 1;
-  animation: fade-in;
+::shared-old(#root) {
+  // This is the saved output referenced in step 3.
+  content: cached-element(html);
+}
+::shared-new(#root) {
+  content: element(html);
 }
 
-// Easing curve/duration for change in element's transform and bounds.
-::shared-container(#A) {
-  transition: all 1s ease-out;
+::shared-old(#shared-header), ::shared-new(#shared-header) {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  
+  content: element(#header);
+}
+::shared-old(#shared-header) {
+  // This is the saved output referenced in step 3.
+  content: cached-element(#header);
+}
+::shared-new(#shared-header) {
+  content: element(#header);
+}
+
+// Update the container's size and transform to the shared element on the new page.
+::shared-container(#shared-header) {
+  width: 200px;
+  height: 200px;
+  transform: translate(0px, 100px);
 }
 ```
 
-For specifying animations using script, we will expose the [Animatable interface](https://drafts.csswg.org/web-animations/#the-animatable-interface-mixin) for the same pseudo elements.
-
-An API is also needed to customize the paint order of these elements.
+7. Once no pseudo element has an active animation, remove them from the top layer.
 
 ## Live Animatable Properties
-A common capability desirable for multiple use-cases during transitions was to interpolate styles like border-radius that change the element's shape. The [container transform](https://material.io/design/motion/the-motion-system.html#container-transform) example show a visual demo of that. Painting properties like the element's border within its image when using the element() function makes this difficult.
-
-Developers can control which properties are painted in the element vs interpolated by removing them from the shared element during the transition and adding them to the container instead. A new pseudo class is introduced which is applied when an element is in transition state, i.e., its being displayed in the Transition DOM. The following is an example of developer provided CSS to animate an element's border, border-radius and box-shadow during the transition. A working example of this using the existing element() function in Firefox is [here](https://jsbin.com/fifupusuvo/1/edit?html,output).
-
-Note : Supporting this requires the browser to copy the complete ComputedStyle for the pseudo elements in the Transition DOM from outgoing to incoming document, as opposed to only the [computed properties](#computed-properties).
+A common capability desirable during transitions is to interpolate styles like border-radius that change the element's shape. The [container transform](https://material.io/design/motion/the-motion-system.html#container-transform) examples show a visual demo of that. Painting properties like the element's border within its image when using the element() function makes this difficult. The following example[^2] shows how developers can control which styles are captured in the element() function vs being applied to the pseudo container on the old page.
 
 ```
-.shared-element {
-  border: 10px solid black;
-  border-radius: 10% 10%;
-  box-shadow: 0px 0px 10px;
-  
-  &:transition {
-    /* Retain the border to ensure it is painted transparent but the box size is unchanged. */
-    border: 10px solid transparent;
-    border-radius: none;
-    box-shadow: none;
-  }
-}
-
-::shared-container(#shared-id) {
-  border: 10px solid black;
-  border-radius: 10% 10%;
-  box-shadow: 0px 0px 10px;
-}
-
-::shared-old(#shared-id) {
-  top: -10px;
-  left: -10px;
-}
+<html>
+<head>
+  <style>
+    .animated {
+      width:100px;
+      height:100px;
+      border: 10px solid black;
+      border-radius: 10% 10%;
+      box-shadow: 0px 0px 10px;
+      
+      &:transition {
+        /* Retain the border to ensure it is painted transparent but the box size is unchanged. */
+        border: 10px solid transparent;
+        border-radius: none;
+        box-shadow: none;
+      }
+    }
+    
+    ::shared-container(#shared-header) {
+      border: 10px solid black;
+      border-radius: 10% 10%;
+      box-shadow: 0px 0px 10px;
+    }
+    
+    ::shared-old(#shared-header) {
+      top: -10px;
+      left: -10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="animated" shared-id="shared-header">hello world</div>
+</body>
+</html>
 ```
 
-An alternate approach to this is to support this natively in the browser by introducing a new content-element() function. This function would behave similar to the element() function except skipping the following properties when painting the element: box decorations and visual effects which generate a stacking context. The image will also be sized to the element's content-box (as opposed to the border-box used by the element() function). The motivation for supporting this natively would be to ensure ease of use for developers.
+This capability requires the following changes to the steps mentioned in the design above :
+* A new pseudo class ("transition") is introduced which is activated when an element is being displayed using pseudo elements in step 1 and 5.
+* When saving state in step 3, the container element's complete style is preserved instead of only the computed size and transform.
+
+## Modifications to element()
+The following changes will be made to the element() spec as a part of this proposal :
+
+* The target element must have paint containment (contain:paint) to ensure the element is the containing block for all positioned descendents and generates a stacking context.
+* The target element must disallow fragmentation (break-inside:avoid).
+* A new cached-element() function is introduced to refer to the saved output of the element() function in step 3) of the design.
+
+# API Examples
+## SPA
+TODO: Add example
+
+## MPA Script Based
+TODO: Add example
+
+# Alternatives Considered
+## Heirarchical Properties
+This proposal disallows a shared element to be nested inside another shared element. The restriction avoids the need to preserve the hierarchy of the shared elements and associated properties (transform, clip, effects inherited by descendents) when creating pseudo elements. This is a consideration for future iterations of the feature.
+
+## Container/Child Split
+One consideration was to render each shared element using a replaced element directly instead of creating a container element. The motivation behind this split is to provide a stacking context to cross-fade the content of old and new shared elements. This was necessary to ensure blending identical pixels is a no-op using [plus-lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_plus_lighter) blending. While same-origin transitions could avoid this, it enables future extensibility for cross-origin transitions where cross-fading identical images would be common.
+
+## Natively Supported Live Animatable Properties
+An alternate approach to the setup described in [Live Animatable Properties](#live-animatable-properties) is to support this natively in the browser by introducing a new content-element() function. This function would behave similar to the element() function except skipping the following properties when painting the element: box decorations and visual effects which generate a stacking context. The image will also be sized to the element's content-box (as opposed to the border-box used by the element() function). The motivation for supporting this natively would be to make these properties animatable instead of requiring developer side changes.
 
 # Security/Privacy Considerations
 The security considerations below are limited to same-origin transitions :
@@ -256,4 +251,5 @@ The security considerations below are limited to same-origin transitions :
 # Related Reading
 An aspect of the feature that needs to be defined is the [type of navigations](https://github.com/WICG/app-history#appendix-types-of-navigations) that the outgoing page can configure. We expect this will closely align with the navigations that can be observed by the page using app-history's [navigate event](https://github.com/WICG/app-history#restrictions-on-firing-canceling-and-responding).
 
-[^1]: Note that for MPA this should be the rAF for the new Document's first rendering lifecycle update. Standardization of this behaviour is a part of the [renderblocking](https://github.com/whatwg/html/issues/7131) proposal.
+[^1]: Standardization of this behaviour is a part of the [renderblocking](https://github.com/whatwg/html/issues/7131) proposal.
+[^2]: A working example using the existing element() function in Firefox is [here](https://jsbin.com/fifupusuvo/1/edit?html,output).
