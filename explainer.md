@@ -15,6 +15,8 @@ These transitions should be feasible in SPAs (Single Page Apps) and MPAs (Multi 
 # Design
 Let's take the example below which shows how the API can be used by a developer to animate the background and a shared element on a same origin navigation (MPA). The SPA equivalent of this case is one where the old document is mutated into the new document via DOM APIs. See [API Extensions](#api-extensions) for more code examples.
 
+Note that the API shape below is tentative and used to explain the core feature design.
+
 ### Old Document
 ```
 <html>
@@ -67,30 +69,29 @@ Let's take the example below which shows how the API can be used by a developer 
 
 The steps taken by the browser during the transition are as follows.
 
-1. When a navigation is initiated on the old Document, create the following pseudo elements in the top layer[^1]. Note that a shared element must not be nested inside another shared element :
+1. When a navigation is initiated on the old Document, create the following pseudo-elements in the top layer[^1]. Note that a shared element must not be nested inside another shared element :
 
-    a. A container and child replaced element for each element with the sharedId attribute. These are identified via ::shared-container(#sharedId) and ::shared-old(#sharedId) respectively.
+    a. A container pseudo-element and child replaced pseudo-element for each element with the sharedId attribute. These are identified via ::shared-container(#sharedId) and ::shared-old(#sharedId) respectively.
 
-    b. A replaced element for the root/html element identified via ::shared-old(#root).
+    b. A replaced pseudo-element for the root/html element identified via ::shared-old-root.
     
     c. The box hierarchy in the top layer stacking context is :
     
     ```
-    ├───shared-old(root)
+    ├───shared-old-root
     ├───shared-container(#header)
          ├───shared-old(#header)
     ```
 
 2. Apply the following UA stylesheet to the pseudo elements on the old page :
 ```
-// "root" is a reserved keyword for the html element.
-::shared-old(#root), ::shared-container(#header-id) {
+::shared-old-root, ::shared-container(#header-id) {
   position: fixed;
   top: 0px;
   left: 0px;
 }
 
-::shared-old(#root) {
+::shared-old-root {
   width: 100vw;
   height: 100vh;
   // The output of element() function on the root element.
@@ -105,7 +106,7 @@ The steps taken by the browser during the transition are as follows.
   
   // A transform positioning the element relative to the viewport so that it overlaps
   // exactly with its screen coordinates and orientation it had on the old page.
-  transform: translate(0px, 308px);
+  transform: translate(8px, 308px);
 }
 
 ::shared-old(#header-id) {
@@ -124,21 +125,31 @@ The steps taken by the browser during the transition are as follows.
 
 6. Once the page is ready for first render, create the following pseudo elements in the top layer. The pseudo elements are kept in sync with the corresponding shared elements in the DOM until the transition completes as specified in step 8 :
 
-    a. A container and child replaced element for each shared element on the old page using state saved in step 3.
+    a. A container pseudo-element and child replaced pseudo-element for each shared element on the old page using state saved in step 3.
 
-    b. A container and child replaced element for each element with sharedId attribute on the new page. The container is reused if already present.
+    b. A container pseudo-element and child replaced pseudo-element for each element with sharedId attribute on the new page. The container is reused if already present.
 
-    c. A replaced element for the root/html element identified via ::shared-old(#root).
+    c. A replaced element for the root/html element identified via ::shared-new-root.
+
+    d. The box hierarchy in the top layer stacking context is :
+    
+    ```
+    ├───shared-new-root
+    ├───shared-old-root
+    ├───shared-container(#header)
+         ├───shared-new(#header)
+         ├───shared-old(#header)
+    ```
 
 7. Apply the following UA stylesheet to the pseudo elements on the new page.
 ```
-::shared-old(#root), ::shared-new(#root), ::shared-container(#header-id) {
+::shared-old-root, ::shared-new-root, ::shared-container(#header-id) {
   position: fixed;
   top: 0px;
   left: 0px;
 }
 
-::shared-old(#root), ::shared-new(#root) {
+::shared-old-root, ::shared-new-root {
   width: 100vw;
   height: 100vh;
   content: element(html);
@@ -148,7 +159,7 @@ The steps taken by the browser during the transition are as follows.
 ::shared-container(#header-id) {
   width: 200px;
   height: 200px;
-  transform: translate(0px, 108px);
+  transform: translate(8px, 108px);
   
   // The blend mode referenced below is not currently exposed with mix-blend-mode.
   isolation: isolate;
@@ -161,7 +172,7 @@ The steps taken by the browser during the transition are as follows.
   height: 100%;
 }
 
-::shared-old(#root) {
+::shared-old-root {
   // This is the saved output referenced in step 3.
   content: cached-element(html);
 }
@@ -169,7 +180,7 @@ The steps taken by the browser during the transition are as follows.
   content: cached-element(#header);
 }
 
-::shared-new(#root) {
+::shared-new-root {
   content: element(html);
 }
 ::shared-new(#header-id) {
@@ -181,7 +192,7 @@ The steps taken by the browser during the transition are as follows.
   0% {opacity: 0;}
   100% {opacity: 1;}
 }
-::shared-new(#root), ::shared-new(#header-id) {
+::shared-new-root, ::shared-new(#header-id) {
   animation: ::shared-new-fade-in 0.25s;
 }
 
@@ -189,7 +200,7 @@ The steps taken by the browser during the transition are as follows.
   0% {opacity: 1;}
   100% {opacity: 0;}
 }
-::shared-old(#root), ::shared-old(#header-id) {
+::shared-old-root, ::shared-old(#header-id) {
   animation: ::shared-old-fade-out 0.25s;
 }
 
@@ -206,7 +217,7 @@ The steps taken by the browser during the transition are as follows.
 }
 ```
 
-8. When the transition finishes, remove all pseudo elements from the top layer. The transition finishes when there is no active animation on any pseudo element.
+8. When the transition finishes, remove all pseudo elements from the top layer. The transition finishes when there is no active animation on any pseudo element. See [issue 64](https://github.com/WICG/shared-element-transitions/issues/64) for discussion on this.
 
 ## Animating Box Decoration CSS Properties
 A common capability desirable during transitions is to interpolate styles like border-radius that change the element's shape. The [container transform](https://material.io/design/motion/the-motion-system.html#container-transform) examples show a visual demo of that. Painting properties like the element's border within its image when using the element() function makes this difficult.
@@ -338,7 +349,7 @@ ii. In step 3 when saving state from the old page, the completed ComputedStyle o
 
 iii. In step 7 when applying a UA stylesheet to pseudo elements on the new page, the saved style is also applied to the old pseudo elements :
 ```
-::shared-old(#root) {
+::shared-old-root {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -355,8 +366,9 @@ The following changes will be made to the element() spec as a part of this propo
 
 * The target element must have paint containment (contain:paint) to ensure the element is the containing block for all positioned descendents and generates a stacking context.
 * The target element must disallow fragmentation (break-inside:avoid).
-* A new cached-element() function is introduced to refer to the saved output of the element() function in step 3) of the design.
+* A new cached-element() function is introduced to refer to the saved output of the element() function in step 3 of the design.
 * Nested shared elements are omitted from the output of element() function.
+* Elements captured using element() and displayed via pseudo-elements during the transition are not painted in the regular DOM.
 * The special cases when running the element() function on the html element are :
     * The natural size for the generated image is the visual viewport bounds.
     * When creating the image, the element is drawn on a canvas with the background color of the document.
@@ -444,4 +456,3 @@ An aspect of the feature that needs to be defined is the [type of navigations](h
 
 [^1]: The pseudo elements in the top layer will not have an associated [::backdrop](https://fullscreen.spec.whatwg.org/#::backdrop-pseudo-element) that is created for other elements in the top layer.
 [^2]: A working example using the existing element() function in Firefox is [here](https://jsbin.com/fifupusuvo/1/edit?html,output).
-
