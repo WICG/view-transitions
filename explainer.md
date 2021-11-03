@@ -81,13 +81,13 @@ The steps taken by the browser during the transition are as follows.
     
     ```
     ├───shared-old-root
-    ├───shared-container(#header)
-         ├───shared-old(#header)
+    ├───shared-container(header-id)
+         ├───shared-old(header-id)
     ```
 
 2. Apply the following UA stylesheet to the pseudo elements on the old page :
 ```
-::shared-old-root, ::shared-container(#header-id) {
+::shared-old-root, ::shared-container(header-id) {
   position: fixed;
   top: 0px;
   left: 0px;
@@ -101,7 +101,7 @@ The steps taken by the browser during the transition are as follows.
 }
 
 ::shared-container(header-id) {
-  // This size is is chosen exactly according to the #header-id element's
+  // This size is is chosen exactly according to the header-id element's
   // border box dimensions after layout.
   width: 100px;
   height: 100px;
@@ -115,7 +115,7 @@ The steps taken by the browser during the transition are as follows.
   position: absolute;
   width: 100%;
   height: 100%;
-  content: element(#header);
+  content: element(header-id);
 }
 ```
 
@@ -138,9 +138,9 @@ The steps taken by the browser during the transition are as follows.
     ```
     ├───shared-new-root
     ├───shared-old-root
-    ├───shared-container(#header)
-         ├───shared-new(#header)
-         ├───shared-old(#header)
+    ├───shared-container(header-id)
+         ├───shared-new(header-id)
+         ├───shared-old(header-id)
     ```
 
 7. Apply the following UA stylesheet to the pseudo elements on the new page.
@@ -168,7 +168,7 @@ The steps taken by the browser during the transition are as follows.
   mix-blend-mode: [plus-lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_plus_lighter);
 }
 
-::shared-old(#header-id), ::shared-new(header-id) {
+::shared-old(header-id), ::shared-new(header-id) {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -178,15 +178,15 @@ The steps taken by the browser during the transition are as follows.
   // This is the saved output referenced in step 3.
   content: cached-element(html);
 }
-::shared-old(#header-id) {
-  content: cached-element(#header);
+::shared-old(header-id) {
+  content: cached-element(header-id);
 }
 
 ::shared-new-root {
   content: element(html);
 }
-::shared-new(#header-id) {
-  content: element(#header);
+::shared-new(header-id) {
+  content: element(header-id);
 }
 
 // Default animations added by the UA which can be overridden by the developer stylesheet/script.
@@ -206,7 +206,7 @@ The steps taken by the browser during the transition are as follows.
   animation: ::shared-old-fade-out 0.25s;
 }
 
-// Generated for each shared element with the syntax shared-container-sharedId.
+// Generated for each shared element with the syntax shared-container-sharedid.
 @keyframes ::shared-container-header-id {
   from {
     width: 100px;
@@ -433,7 +433,7 @@ requestAnimationFrame(() => {
         height: oldHeaderStyle.height,
         transform: oldHeaderStyle.transform }],
       { duration: 1000,
-        pseudoElement: '::shared-container(#header-id)' });
+        pseudoElement: '::shared-container(header-id)' });
   }
 });
 ```
@@ -449,7 +449,7 @@ One consideration is to render each shared element using a replaced element dire
 An alternate approach to the setup described in [Animating Box Decoration CSS Properties](#live-animatable-properties) is to support this natively in the browser by introducing a new `content-element()` function. This function would behave similarly to the `element()` function except skipping the following properties when painting the element: box decorations and visual effects which generate a stacking context. The image would also be sized to the element's content-box (as opposed to the border-box used by the element() function). The motivation for supporting this natively would be to make these properties animatable instead of requiring developers to implement it themselves.
 
 # Security/Privacy Considerations
-The security considerations below are limited to same-origin transitions :
+The security considerations below cover same-origin transitions. These are a subset of what's required for cross-origin transitions :
 
 * Script can never read pixel content for images generated using the element() function. This is necessary since the document may embed cross-origin content (iframes, CORS resources, etc.) and multiple restricted user information (visited links history, dictionary used for spell check, etc.)
 * The Live Animatable Properties could reference resources which are restricted in the new document for an MPA navigation. For example, the old page may use a cross-origin image for border-image which can't be accessed by the new page due to differences in [COEP](https://wicg.github.io/cross-origin-embedder-policy/). Fetching these styles will fail on the new page. For same-origin navigations, the developer already has knowledge of the cross-origin policy on the new page. They can ensure not to reference cross-origin resources in the properties made live.
