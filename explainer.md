@@ -36,6 +36,7 @@ Note that the API shape below is tentative and used to explain the core feature 
 </head>
 <body>
   <div class="animated" sharedId="header-id" id="header">Shared Element</div>
+  <a href="new-document.html">Click Me</a>
 </body>
 </html>
 ```
@@ -69,7 +70,7 @@ Note that the API shape below is tentative and used to explain the core feature 
 
 The steps taken by the browser during the transition are as follows.
 
-1. When a navigation is initiated on the old Document, create the following pseudo-elements in the top layer[^1]. Note that a shared element must not be nested inside another shared element :
+1. When the user presses "Click Me" and a navigation is initiated on the old Document, create the following pseudo-elements in the top layer[^1]. Note that a shared element must not be nested inside another shared element :
 
     a. A container pseudo-element and child replaced pseudo-element for each element with the sharedId attribute. These are identified via ::shared-container(#sharedId) and ::shared-old(#sharedId) respectively.
 
