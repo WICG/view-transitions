@@ -329,7 +329,7 @@ the shared element.
       box-shadow: 0px 0px 10px;
     }
 
-    // Offset the image to account for the border in the snapshot.
+    /* Offset the image to account for the border in the snapshot. */
     ::shared-old(header-id) {
       top: -10px;
       left: -10px;
@@ -426,13 +426,24 @@ iii. In step 7 when applying a UA stylesheet to pseudo elements on the new page,
 the saved style is also applied to the old pseudo elements :
 
 ```css
-::shared-old-root {
+::shared-container(header-id) {
+  /* This is the saved output referenced in step 3. Applied before updating to
+   values from the shared element in the new DOM. */
+  width: 100px;
+  height: 100px;
+  transform: translate(8px, 308px);
+  border: 10px solid black;
+  border-radius: 10% 10%;
+  box-shadow: 0px 0px 10px;
+}
+
+::shared-old(header-id) {
   position: absolute;
   width: 100%;
   height: 100%;
 
   /* This is the saved output referenced in step 3. */
-  content: cached-element(html);
+  content: cached-element(header-id);
   top: -10px;
   left: -10px;
 }
