@@ -244,12 +244,13 @@ Consider the same example[^2] as above with the addition of box decorations to t
       border: 10px solid black;
       border-radius: 10% 10%;
       box-shadow: 0px 0px 10px;
-      &:transition {
-        /* Retain the border to ensure it is painted transparent but the box size is unchanged. */
-        border: 10px solid transparent;
-        border-radius: none;
-        box-shadow: none;
-      }
+    }
+    
+    .animated:transition {
+      /* Retain the border to ensure it is painted transparent but the box size is unchanged. */
+      border: 10px solid transparent;
+      border-radius: none;
+      box-shadow: none;
     }
     
     ::shared-container(#header-id) {
@@ -290,12 +291,12 @@ Consider the same example[^2] as above with the addition of box decorations to t
       border: 5px solid black;
       border-radius: 50% 50%;
       box-shadow: 0px 0px 5px;
-      
-      &:transition {
-        border: 5px solid transparent;
-        border-radius: none;
-        box-shadow: none;
-      }
+    }
+    
+    .animated:transition {
+      border: 5px solid transparent;
+      border-radius: none;
+      box-shadow: none;
     }
     
     ::shared-container(#header-id) {
