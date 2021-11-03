@@ -264,7 +264,7 @@ The steps taken by the browser during the transition are as follows.
       from {
         width: 100px;
         height: 100px;
-        transform: translate(0px, 308px);
+        transform: translate(8px, 308px);
       }
     }
     ::shared-container(header-id) {
