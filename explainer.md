@@ -277,6 +277,11 @@ The steps taken by the browser during the transition are as follows.
     element. See
     [issue 64](https://github.com/WICG/shared-element-transitions/issues/64) for
     discussion on this.
+    
+An example simulating the steps above using the existing `element()` function
+is [here](https://jsbin.com/bisoleziyi/edit?html,output) (open in Firefox).
+
+[![Video Link for Shared Element Transition](https://img.youtube.com/vi/QzGEBUW-3U8/0.jpg)](https://youtu.be/QzGEBUW-3U8)
 
 ## Animating Box Decoration CSS Properties
 
