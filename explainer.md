@@ -291,7 +291,7 @@ border-radius that change the element's shape. The
 examples show a visual demo of that. Painting properties like the element's
 border within its image when using the element() function makes this difficult.
 
-Consider the same example[^2] as above with the addition of box decorations to
+Consider the same example as above with the addition of box decorations to
 the shared element.
 
 ### Old Document
@@ -448,6 +448,11 @@ the saved style is also applied to the old pseudo elements :
   left: -10px;
 }
 ```
+
+An example simulating the steps above using the existing `element()` function
+is [here](https://jsbin.com/vesokanumu/edit?html,output) (open in Firefox).
+
+[![Video Link for Shared Element Transition](https://img.youtube.com/vi/SGnZN3NE0jA/0.jpg)](https://youtu.be/SGnZN3NE0jA)
 
 ## Modifications to element()
 
@@ -612,5 +617,3 @@ navigations that can be observed by the page using app-history's
 [^1]: The pseudo elements in the top layer will not have an associated
     [::backdrop](https://fullscreen.spec.whatwg.org/#::backdrop-pseudo-element)
     that is created for other elements in the top layer.
-[^2]: A working example using the existing element() function in Firefox is
-    [here](https://jsbin.com/fifupusuvo/1/edit?html,output).
