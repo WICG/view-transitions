@@ -279,7 +279,7 @@ The steps taken by the browser during the transition are as follows.
     discussion on this.
     
 An example simulating the steps above using the existing `element()` function
-is [here](https://jsbin.com/bisoleziyi/edit?html,output) (open in Firefox).
+is [here](https://jsbin.com/niqiqididu/edit?html,output) (open in Firefox[^2]).
 
 [![Video Link for Shared Element Transition](https://img.youtube.com/vi/QzGEBUW-3U8/0.jpg)](https://youtu.be/QzGEBUW-3U8)
 
@@ -617,3 +617,6 @@ navigations that can be observed by the page using app-history's
 [^1]: The pseudo elements in the top layer will not have an associated
     [::backdrop](https://fullscreen.spec.whatwg.org/#::backdrop-pseudo-element)
     that is created for other elements in the top layer.
+[^2]: There is a double draw of the shared element in the demo since it
+    continues to paint in the original DOM/the snapshot of the root element.
+    This is addressed in the proposed modifications to the element() function.
