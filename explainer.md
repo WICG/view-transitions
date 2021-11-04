@@ -27,11 +27,14 @@ The following is a summary of the semantics of these transition patterns :
     an optional static UI element on top.
     [Shared axis](https://material.io/design/motion/the-motion-system.html#shared-axis)
     shows an example.
-*   Shared Element Transitions : A persistent UI element morphs into another
-    (which could be a UI element on the next page or the whole page) changing
-    its shape and content.
+*   Shared Element to Root Transitions : A persistent UI element morphs into the full
+    page content on the next web page.
     [Container transform](https://material.io/design/motion/the-motion-system.html#container-transform)
     shows an example.
+*   Shared Element Transitions : A persistent UI element morphs into another
+    UI element on the next web page. The element's contents and shape can change during
+    this transition. This [video](https://www.youtube.com/watch?v=SGnZN3NE0jA) shows an
+    example.
 *   Entry/Exit Transitions : A UI element animates as it exits or enters the
     screen. This
     [issue](https://github.com/WICG/shared-element-transitions/issues/37) shows
