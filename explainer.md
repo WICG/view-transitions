@@ -1,7 +1,7 @@
 # Introduction
 
 When a user navigates on the web, they get to see the inner workings of web
-experiences: flash of white followed by a piece-meal rendering phase. This
+experiences: flash of white followed by a piecemeal rendering phase. This
 sequenced user experience results in a higher cognitive load because the user
 has to connect the dots between where they were, and where they are. Not only
 that, a smooth animation to transition between scenes also reduces the loading
