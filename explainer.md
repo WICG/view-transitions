@@ -3,11 +3,10 @@
 When a user navigates on the web, they get to see the inner workings of web
 experiences: flash of white followed by a piecemeal rendering phase. This
 sequenced user experience results in a higher cognitive load because the user
-has to connect the dots between where they were, and where they are. Not only
-that, a smooth animation to transition between scenes also reduces the loading
-latency perceived by the user even if the actual loading time is the same. For
-these reasons, most platforms provide easy to use primitives to enable
-developers to build seamless transitions:
+has to connect the dots between where they were, and where they are. In addition,
+it increases the user's perception of loading time as compared with a smooth
+loading animation. For these reasons, most platforms provide easy to use primitives
+to enable developers to build seamless transitions:
 [Android](https://developer.android.com/training/transitions/start-activity),
 [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle)
 and
