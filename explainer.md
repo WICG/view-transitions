@@ -6,7 +6,7 @@ sequenced user experience results in a higher cognitive load because the user
 has to connect the dots between where they were, and where they are. In addition,
 it increases the user's perception of loading time as compared with a smooth
 loading animation. For these reasons, most platforms provide easy-to-use primitives
-to enable developers to build seamless transitions:
+that enable developers to build seamless transitions:
 [Android](https://developer.android.com/training/transitions/start-activity),
 [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle)
 and
