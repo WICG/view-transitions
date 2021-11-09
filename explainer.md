@@ -1,6 +1,6 @@
 # Introduction
 
-<video autoplay loop muted playsinline src="media/normal-nav.mp4?raw-true">
+<video autoplay loop muted playsinline src="media/normal-nav.mp4?raw-true"></video>
 
 When a user navigates on the web, state tends to abruptly switch from Page-A to Page-B. Sometimes this includes a flash of white, although browsers try to avoid this in some cases. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. In addition, it increases the user's perception of loading time as compared with a smooth loading animation. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
 
