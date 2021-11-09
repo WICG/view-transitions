@@ -555,6 +555,9 @@ requestAnimationFrame(() => {
 
 # Alternatives Considered
 
+The following is a list of design alternatives under consideration. Options
+highlighted for future iterations have been deferred to minimize the MVP scope.
+
 ## Heirarchical Properties
 
 This proposal disallows a shared element to be nested inside another shared
@@ -578,15 +581,44 @@ images would be common.
 ## Natively Supporting Animating Box Decoration CSS Properties
 
 An alternate approach to the setup described in
-[Animating Box Decoration CSS Properties](#live-animatable-properties) is to
-support this natively in the browser by introducing a new `content-element()`
+[Animating Box Decoration CSS Properties](#animating-box-decoration-css-properties)
+is to support this natively in the browser by introducing a new `content-element()`
 function. This function would behave similarly to the `element()` function
 except skipping the following properties when painting the element: box
 decorations and visual effects which generate a stacking context. The image
 would also be sized to the element's content-box (as opposed to the border-box
-used by the element() function). The motivation for supporting this natively
-would be to make these properties animatable instead of requiring developers to
-implement it themselves.
+used by the element() function).
+
+The motivation for supporting this natively would be to make these properties
+animatable by default instead of requiring developers to implement it themselves.
+This is a consideration for future iterations of the feature.
+
+## Clipping of Effects
+
+The decorated bounding box used by the element() function clips effects which paint
+outside the element's border-box (like box-shadow, drop-shadow) when generating an
+element's image. Developers can avoid this by using the approach outlined in
+[Animating Box Decoration CSS Properties](#animating-box-decoration-css-properties) to
+move rendering of these effects to the pseudo element.
+
+An alternate approach is to expand the decorated bounding box as defined in the
+element() spec to include ink overflow created by effects applied to the target of
+the element() function. This avoids the need for any developer side changes to avoid
+clipping of these effects. This approach wasn't taken to minimize changes to the
+semantics of the element() function and address this going forward with
+[Natively Supporting Animating Box Decoration CSS Properties](#natively-supporting-animating-box-decoration-css-properties)
+which will also make these properties animatable.
+
+## Content Overflow
+
+The paint containment restriction on the shared element clips the element's content and
+its descendents to the element's overflow clip edge (which defaults to the padding box).
+This can be expanded to allow an explicit overflow using overflow-clip-margin but
+the decorated bounding box defined by the element() spec still limits the overflow to
+the shared element's border-box in the generated image.
+
+This can be addressed by expanding the size of the decorated bounding box in the element()
+spec by overflow-clip-margin. This is a consideration for future iterations of the feature.
 
 # Security/Privacy Considerations
 
