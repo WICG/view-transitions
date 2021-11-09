@@ -1,48 +1,113 @@
 # Introduction
 
-When a user navigates on the web, they get to see the inner workings of web
-experiences: flash of white followed by a piecemeal rendering phase. This
-sequenced user experience results in a higher cognitive load because the user
-has to connect the dots between where they were, and where they are. In addition,
-it increases the user's perception of loading time as compared with a smooth
-loading animation. For these reasons, most platforms provide easy-to-use primitives
-that enable developers to build seamless transitions:
-[Android](https://developer.android.com/training/transitions/start-activity),
-[iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle)
-and
-[Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
+(video of the page transition used to demo the concepts, but just switching from one to the other. Page has a static heading which changes size (due to scroll position), an avatar moves around inside it, and a share button stays in the same place).
 
-Shared Element Transitions provides developers with the same capability on the
-web, irrespective of whether the transitions are cross-document or
-intra-document (SPA).
+When a user navigates on the web, state tends to abruptly switch from Page-A to Page-B. Sometimes this includes a flash of white, although browsers try to avoid this in some cases. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. In addition, it increases the user's perception of loading time as compared with a smooth loading animation. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
+
+(video of the final transition)
+
+Shared Element Transitions provides developers with the same capability on the web, irrespective of whether the transitions are cross-document or intra-document (SPA).
 
 # Use-Cases
 
-A visual demo of some example transition patterns targeted by this feature are
-[here](https://material.io/design/motion/the-motion-system.html#transition-patterns).
-The following is a summary of the semantics of these transition patterns :
+A visual demo of some example transition patterns targeted by this feature are [here](https://material.io/design/motion/the-motion-system.html#transition-patterns). The following is a summary of the semantics of these transition patterns:
 
-*   Root Transitions : The full page content animates between two web pages with
-    an optional static UI element on top.
-    [Shared axis](https://material.io/design/motion/the-motion-system.html#shared-axis)
-    shows an example.
-*   Shared Element to Root Transitions : A persistent UI element morphs into the full
-    page content on the next web page.
-    [Container transform](https://material.io/design/motion/the-motion-system.html#container-transform)
-    shows an example.
-*   Shared Element Transitions : A persistent UI element morphs into another
-    UI element on the next web page. The element's contents and shape can change during
-    this transition. This [video](https://www.youtube.com/watch?v=SGnZN3NE0jA) shows an
-    example.
-*   Entry/Exit Transitions : A UI element animates as it exits or enters the
-    screen. This
-    [issue](https://github.com/WICG/shared-element-transitions/issues/37) shows
-    an example.
-
-These transitions should be feasible in SPAs (Single Page Apps) and MPAs (Multi
-Page Apps).
+* Root Transitions: The full page content animates between two web pages with an optional static UI element on top. Examples 1 & 2 [here](https://material.io/design/motion/the-motion-system.html#shared-axis) are demonstrations of this.
+* Shared Element to Root Transitions: A persistent UI element morphs into the full page content on the next web page. [Container transform](https://material.io/design/motion/the-motion-system.html#container-transform) shows an example.
+* Shared Element Transitions: A persistent UI element morphs into another UI element on the next web page. The element's contents and shape can change during this transition. This [video](https://www.youtube.com/watch?v=SGnZN3NE0jA) shows an example.
+* Entry/Exit Transitions: A UI element animates as it exits or enters the screen. This [issue](https://github.com/WICG/shared-element-transitions/issues/37) shows an example.
 
 # Design
+
+Performing a transition from Page-A to Page-B requires parts of both to be on screen at the same time, potentially moving independently. This is currently impossible in a cross-document navigation, but it's still hard in an SPA (single page app) navigation. You need to make sure that the outgoing state can't receive additional interactions, and ensure the presence of both states doesn't create a confusing experience for those using accessibility technology.
+
+The aim of this design is to allow for representations of both Page-A and Page-B to exist at the same time, without the usability, accessibility, or memory concerns of having both complete DOM trees alive.
+
+Here's the example that will be used to explain the design:
+
+(page A and page B)
+
+The transition between Page-A and Page-B can be a full cross-document navigation between two same-origin pages, or it can be an SPA navigation. The main mechanism and concepts are the same between the two.
+
+## Part 1: The offering
+
+Before Page-A goes away, it offers up parts of itself to be used in the transition. Generally, this will mean one part per 'thing' that will act independently during the transition. For the example transition, the parts are:
+
+- The header container
+- The header content
+- The share button
+- The rest
+
+(video showing the page being pulled apart in this way)
+
+To avoid the risks, complexities, and memory impact of fully preserving these parts of Page-A, they're retained as a bitmap at their current CSS size, multiplied by the device pixel ratio.
+
+The captured area is limited to the border box, because ???. This makes the example tricky due to the shadow on the header, which would be completely clipped away, and the shadow on the share button, which would be partially clipped away. The developer cannot expand the captured area because ???.
+
+The workaround for this sees the developer manually removing these styles during the offering phase, and having Page-B reapply them manually later. See the API section for more details. The complexity here is worth it because ???.
+
+In this case, since the header content moves independently of the header itself, the background of the header will also need to be removed and reapplied manually later. The complexity here is worth it because ???.
+
+(3-col video showing share button original, captured, and reapplied)
+
+'The rest' is referred to as the 'root'. Rather than capturing the whole page, which would take an enormous amount of memory in some cases, only the area within the viewport is captured. The developer cannot expand the captured area because ???.
+
+Other captured elements may expand vastly beyond the viewport, but this isn't a concern because ???.
+
+## Part 2: The preparation
+
+The state changes over to Page-B, and Page-A is gone aside from the parts it offered.
+
+An overlay is automatically created in the top level, and the offered parts from Page-A are automatically laid out in their previous viewport-relative positions.
+
+(video showing the page being reassembled, but not with their reapplied styles)
+
+Each transition element at this stage is represented by a container pseudo-element and a pseudo-element child.
+
+```
+├ Transition container
+│ └ Transition child
+└ Transition container
+  └ Transition child
+```
+
+The transition container maintains the box size of the original element, whereas the transition child holds an image of the captured appearance.
+
+These elements can be styled with CSS, and this is where the developer must manually re-add things that appear outside the border-box clipping area.
+
+(video of styles being reapplied)
+
+Assuming the developer gets the manual parts correct, the switch from Page-A to this state is seamless – the user will not see a flash of Page-B, or Page-A with intermediate removed styles.
+
+At this stage, Page-B identifies parts of its own page to be involved in the transition. This happens in the same way as part 1, including the clipping, and the necessary manual removing and reapplying of particular styles.
+
+(video showing removal of styles, and copying them out of the page)
+
+The only difference between the elements captured from Page-A and those captured from Page-B, is the appearance of content captured from Page-B will update if the underlying content updates. Among other things, this means videos, gifs, and other animated content will update as expected, whereas the content captured from Page-A is static.
+
+Some of the captured parts of Page-B can be linked to Page-A parts, if they're equivalent elements. In this case, the headers, share buttons, and roots are equivalent. When this happens, the child from the Page-B capture is added to the Page-A equivalent container.
+
+```
+├ Transition container
+│ ├ Transition child (Page-A)
+│ └ Transition child (Page-B)
+```
+
+This allows for the container to be moved as one, while cross-fading the Page-A and Page-B content.
+
+Part don't need to be linked, which allows for transitions involving elements that are only in Page-A or only in Page-B.
+
+## Part 3: The transition
+
+Everything is now in place to perform the transition. The developer can move the parts around using the usual APIs, such as CSS and web animations.
+
+(video of the final transition)
+
+## Part 4: The end
+
+The transition is assumed to be complete when ???. At this point, the top level is removed, revealing the real Page-B.
+
+# The API
 
 Let's take the example below which shows how the API can be used by a developer
 to animate the background and a shared element on a same origin navigation
@@ -279,7 +344,7 @@ The steps taken by the browser during the transition are as follows.
     element. See
     [issue 64](https://github.com/WICG/shared-element-transitions/issues/64) for
     discussion on this.
-    
+
 An example simulating the steps above using the existing `element()` function
 is [here](https://jsbin.com/niqiqididu/edit?html,output) (open in Firefox[^2]).
 
