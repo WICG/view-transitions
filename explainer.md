@@ -25,7 +25,7 @@ The aim of this design is to allow for representations of both Page-A and Page-B
 
 Here's the example that will be used to explain the design:
 
-(page A and page B)
+<img alt="Page-A and Page-B" src="media/pages.png?raw=true">
 
 The transition between Page-A and Page-B can be a full cross-document navigation between two same-origin pages, or it can be an SPA navigation. The main mechanism and concepts are the same between the two.
 
