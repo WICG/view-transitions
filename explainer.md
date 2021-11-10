@@ -237,6 +237,7 @@ Because the textures are sized to 100% of the container, the textures will also 
 In all cases, the duration and easing is some undecided default, that could even be platform independent.
 
 - Open question: When will the automatic animation start? When the browser would usually first render Page-B?
+- Open question: Automatic animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
 
 ### CSS animation
 
