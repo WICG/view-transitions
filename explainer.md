@@ -51,7 +51,7 @@ When a developer offers part of the page for transitions, there are two modes th
 
 The entire painting of the element is captured, including things which appear outside of its bounding box such as shadows and blurs, as a single texture at device-pixel resolution.
 
-(video - header moves in, stretches height, shrinks width, shrinks height, back to normal)
+https://user-images.githubusercontent.com/93594/141118353-d62d19a1-0964-4fa0-880f-bdde656ce899.mp4
 
 Capturing as a texture avoids the interactivity risks, complexities, and memory impact of fully preserving these parts of Page-A as live DOM.
 
@@ -68,7 +68,7 @@ In this mode the computed styles of the element are copied over, so they can be 
 
 The children of the element (including pseudos and text nodes) are captured into a single texture that can be animated independently.
 
-(video - header moves in, show container content split, back together, header grows but content stays at top. Content stretches then shrinks into middle position, shrink width with clipping, shrink height with clipping, back to normal)
+https://user-images.githubusercontent.com/93594/141118395-8d65da49-a5ab-41c6-8458-917e55d4b77b.mp4
 
 ## Part 2: The preparation
 
