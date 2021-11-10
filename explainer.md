@@ -39,23 +39,36 @@ Before Page-A goes away, it offers up parts of itself to be used in the transiti
 
 - The header
 - The share button
-- The rest
+- The rest (referred to as the page root)
 
 https://user-images.githubusercontent.com/93594/141104275-6d1fb67a-2f73-41e4-9cef-14676798223b.mp4
 
-To avoid the risks, complexities, and memory impact of fully preserving these parts of Page-A, they're retained as a bitmap at their current CSS size, multiplied by the device pixel ratio.
+Aside from the root, an element can only be offered as a transition part if it has paint containment, which clips child content to the content box, although this can be expanded with `overflow-clip-margin`. The is a compromise made to greatly simplify implementation.
 
-The captured area is limited to the border box, because ???. This makes the example tricky due to the shadow on the header, which would be completely clipped away, and the shadow on the share button, which would be partially clipped away. The developer cannot expand the captured area because ???.
+When a developer offers part of the page for transitions, there are two modes they can choose from:
 
-The workaround for this sees the developer manually removing these styles during the offering phase, and having Page-B reapply them manually later. See the API section for more details. The complexity here is worth it because ???.
+### As a single texture
 
-In this case, since the header content moves independently of the header itself, the background of the header will also need to be removed and reapplied manually later. The complexity here is worth it because ???.
+The entire painting of the element is captured, including things which appear outside of its bounding box such as shadows and blurs, as a single texture at device-pixel resolution.
 
-(3-col video showing share button original, captured, and reapplied)
+(video - header moves in, stretches height, shrinks width, shrinks height, back to normal)
 
-'The rest' is referred to as the 'root'. Rather than capturing the whole page, which would take an enormous amount of memory in some cases, only the area within the viewport is captured. The developer cannot expand the captured area because ???.
+Capturing as a texture avoids the interactivity risks, complexities, and memory impact of fully preserving these parts of Page-A as live DOM.
 
-Other captured elements may expand vastly beyond the viewport, but this isn't a concern because ???.
+The root is always captured in this way, and is also clipped to the viewport, as capturing the entire page would take an enormous amount of memory in some cases.
+
+- Open question: Should we have a way to expand this area for particular transitions? For example, transitions that involve vertical movement?
+- Open question: Other elements can also be massive. Do we need a way to limit and control the captured size of those?
+
+This mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently. There's another mode for that:
+
+### Container + child texture
+
+In this mode the computed styles of the element are copied over, so they can be re-rendered without just transforming a texture. This allows the developer to animate properties such as width and height, borders, background color… anything that can be animated with CSS.
+
+The children of the element (including pseudos and text nodes) are captured into a single texture that can be animated independently.
+
+(video - header moves in, show container content split, back together, header grows but content stays at top. Content stretches then shrinks into middle position, shrink width with clipping, shrink height with clipping, back to normal)
 
 ## Part 2: The preparation
 
