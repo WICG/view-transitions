@@ -4,7 +4,7 @@ https://user-images.githubusercontent.com/93594/140955654-fa944c4d-530e-4d3c-828
 
 When a user navigates on the web, state tends to abruptly switch from Page-A to Page-B. This can include a flash of white, and elements which seem to disappear only to reappear in the same place. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. In addition, it increases the user's perception of loading time as compared with a smooth loading animation. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
 
-https://user-images.githubusercontent.com/93594/141097316-a7e9e3c8-bff8-482d-964a-087f178a637f.mp4
+https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
 Shared Element Transitions provides developers with the same capability on the web, irrespective of whether the transitions are cross-document or intra-document (SPA).
 
