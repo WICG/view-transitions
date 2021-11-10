@@ -19,6 +19,10 @@ A visual demo of some example transition patterns targeted by this feature are [
 
 # Design
 
+The goal is to provide a mechanism and API which will allow simple transitions like above to be specified in CSS, building on CSS animations, but also allow for more complex transition to be performed via JavaScript, building on the Web Animations API.
+
+This section covers the concepts and mechanisms, while a later section looks at possible API shapes.
+
 Performing a transition from Page-A to Page-B requires parts of both to be on screen at the same time, potentially moving independently. This is currently impossible in a cross-document navigation, but it's still hard in an SPA (single page app) navigation. You need to make sure that the outgoing state can't receive additional interactions, and ensure the presence of both states doesn't create a confusing experience for those using accessibility technology.
 
 The aim of this design is to allow for representations of both Page-A and Page-B to exist at the same time, without the usability, accessibility, or memory concerns of having both complete DOM trees alive.
@@ -31,10 +35,9 @@ The transition between Page-A and Page-B can be a full cross-document navigation
 
 ## Part 1: The offering
 
-Before Page-A goes away, it offers up parts of itself to be used in the transition. Generally, this will mean one part per 'thing' that will act independently during the transition. For the example transition, the parts are:
+Before Page-A goes away, it offers up parts of itself to be used in the transition. Generally, this will mean one part per 'thing' that acts independently during the transition. For the example transition, the parts are:
 
-- The header container
-- The header content
+- The header
 - The share button
 - The rest
 
