@@ -41,7 +41,7 @@ Before Page-A goes away, it offers up parts of itself to be used in the transiti
 - The share button
 - The rest
 
-(video showing the page being pulled apart in this way)
+https://user-images.githubusercontent.com/93594/141104275-6d1fb67a-2f73-41e4-9cef-14676798223b.mp4
 
 To avoid the risks, complexities, and memory impact of fully preserving these parts of Page-A, they're retained as a bitmap at their current CSS size, multiplied by the device pixel ratio.
 
