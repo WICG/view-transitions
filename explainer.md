@@ -145,7 +145,7 @@ https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b
 
 ## Part 4: The end
 
-When the transition complete, the top level is removed, revealing the real Page-B.
+When the transition is complete, the top level is removed, revealing the real Page-B.
 
 # The API
 
