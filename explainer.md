@@ -23,7 +23,7 @@ The goal is to provide a mechanism and API which will allow simple transitions l
 
 This section covers the concepts and mechanisms, while a later section looks at possible API shapes.
 
-Performing a transition from Page-A to Page-B requires parts of both to be on screen at the same time, potentially moving independently. This is currently impossible in a cross-document navigation, but it's still hard in an SPA (single page app) navigation. You need to make sure that the outgoing state can't receive additional interactions, and ensure the presence of both states doesn't create a confusing experience for those using accessibility technology.
+Performing a transition from Page-A to Page-B requires parts of both to be on screen at the same time, potentially moving independently. This is currently impossible in a cross-document navigation, but it's still hard in an SPA (single page app) navigation. You need to make sure that the outgoing state persists along with the incoming state, that it can't receive additional interactions, and ensure the presence of both states doesn't create a confusing experience for those using accessibility technology.
 
 The aim of this design is to allow for representations of both Page-A and Page-B to exist at the same time, without the usability, accessibility, or memory concerns of having both complete DOM trees alive.
 
