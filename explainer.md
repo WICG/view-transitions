@@ -6,7 +6,7 @@ When a user navigates on the web, state tends to abruptly switch from Page-A to 
 
 https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
-Shared Element Transitions provides developers with the same capability on the web, irrespective of whether the transitions are cross-document or intra-document (SPA).
+Shared Element Transitions provides developers with the same capability on the web, irrespective of whether the transitions are cross-document (MPA) or intra-document (SPA).
 
 # Use-Cases
 
