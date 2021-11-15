@@ -2,7 +2,7 @@
 
 https://user-images.githubusercontent.com/93594/140955654-fa944c4d-530e-4d3c-8286-50864d59bb0d.mp4
 
-When a user navigates on the web, state tends to abruptly switch from Page-A to Page-B. This can include a flash of white, and elements which seem to disappear only to reappear in the same place. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. In addition, it increases the user's perception of loading time as compared with a smooth loading animation. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
+When a user navigates on the web, the viewport abruptly switches from Page-A to Page-B, often in some in-progress state. This can include a flash of white, and elements which seem to disappear only to reappear in the same place. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. In addition, it increases the user's perception of loading time as compared with a smooth loading animation. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
 
 https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
@@ -19,25 +19,25 @@ A visual demo of some example transition patterns targeted by this feature is [h
 
 # Design
 
-The goal is to provide a mechanism and API which will allow simple transitions like above to be specified in CSS, building on CSS animations, but also allow for more complex transition to be performed via JavaScript, building on the Web Animations API.
+The goal is to provide a mechanism and API which will allow simple transitions like above to be specified in CSS, building on CSS animations, but also allow for more complex transitions to be performed via JavaScript, building on the Web Animations API.
 
 This section covers the concepts and mechanisms, while a later section looks at possible API shapes.
 
 Performing a transition from Page-A to Page-B requires parts of both to be on screen at the same time, potentially moving independently. This is currently impossible in a cross-document navigation, but it's still hard in an SPA (single page app) navigation. You need to make sure that the outgoing state persists along with the incoming state, that it can't receive additional interactions, and ensure the presence of both states doesn't create a confusing experience for those using accessibility technology.
 
-The aim of this design is to allow for representations of both Page-A and Page-B to exist at the same time, without the usability, accessibility, or memory concerns of having both complete DOM trees alive.
+The aim of this design is to allow for representations of both Page-A and Page-B to exist at the same time, without the usability, accessibility, performance and memory concerns of having both complete DOM trees alive.
 
 Here's the example that will be used to explain the design:
 
 <img alt="Page-A and Page-B" src="media/pages.png?raw=true">
 
-The transition between Page-A and Page-B can be a full cross-document navigation between two same-origin pages, or it can be an SPA navigation. The main mechanism and concepts are the same between the two.
+The transition between Page-A and Page-B can be a full cross-document navigation between two same-origin pages, or it can be an SPA navigation. The concepts are the same between the two.
 
 Cross-origin transitions are something we want to tackle, but may have significant differences and restrictions for security reasons. Cross-origin transitions are not covered in this document.
 
 ## Part 1: The offering
 
-Before Page-A goes away, it offers up parts of itself to be used in the transition. Generally, this will mean one part per 'thing' that acts independently during the transition. For the example transition, the parts are:
+Before Page-A goes away, it offers up parts of itself to be used in a transition. Generally, this will mean one part per 'thing' that acts independently during the transition. For the example transition, the parts are:
 
 - The header
 - The share button
@@ -45,17 +45,17 @@ Before Page-A goes away, it offers up parts of itself to be used in the transiti
 
 https://user-images.githubusercontent.com/93594/141104275-6d1fb67a-2f73-41e4-9cef-14676798223b.mp4
 
-Aside from the root, an element can only be offered as a transition part if it has paint containment, which clips child content to the content box, although this can be expanded with `overflow-clip-margin`. The is a compromise made to greatly simplify implementation.
+Aside from the root, an element can only be offered as a transition part if it has `contain: paint`, which clips child content to the content box, although this can be expanded with `overflow-clip-margin`. The is a compromise made to simplify implementation.
 
 Additionally, the element must be a single rect. As in, it doesn't break across lines or columns.
 
 - Open question: If the developer tries to break the above rules, what should happen? Is paint containment applied by the browser? Is that element dropped from the transition? Is the whole transition abandoned?
 
-When a developer offers part of the page for transitions, there are two modes they can choose from:
+When a developer offers part of the page for a transition, there are two modes they can choose:
 
 ### As a single texture
 
-The entire painting of the element is captured, including things which appear outside of its bounding box such as shadows and blurs, as a single texture at device-pixel resolution.
+The entire painting of the element is captured, including things which appear outside of its bounding box, such as shadows and blurs. The element is captured as a single texture at device-pixel resolution.
 
 https://user-images.githubusercontent.com/93594/141118353-d62d19a1-0964-4fa0-880f-bdde656ce899.mp4
 
@@ -63,16 +63,16 @@ https://user-images.githubusercontent.com/93594/141118353-d62d19a1-0964-4fa0-880
 
 Capturing as a texture avoids the interactivity risks, complexities, and memory impact of fully preserving these parts of Page-A as live DOM.
 
-The root is always captured in this way, and is also clipped to the viewport, as capturing the entire page would take an enormous amount of memory in some cases.
+The root is always captured in this way, and is also clipped to the viewport, as capturing the entire page would take an enormous amount of memory in many cases.
 
-- Open question: Should we have a way to expand this area for particular transitions? For example, transitions that involve vertical movement?
+- Open question: Should we have a way to expand the root capture area for particular transitions? For example, transitions that involve vertical movement?
 - Open question: Other elements can also be massive. Do we need a way to limit and control the captured size of those?
 
-This mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently. There's another mode for that:
+This mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently and doesn't stretch. There's another mode for that:
 
 ### As a container + child texture
 
-In this mode the computed styles of the element are copied over, so they can be re-rendered beyond just transforming a texture. This allows the developer to animate properties such as width and height, borders, background color… anything that can be animated with CSS. It also allows the developer to create animations that clip child content, via `overflow: hidden`.
+In this mode the computed styles of the element are copied over, so they can be re-rendered beyond just transforming a texture. This allows the developer to animate properties such as width and height, borders, background color… anything that can be animated with CSS. It also allows the developer to create animations that clip child content via `overflow: hidden`.
 
 The children of the element (including pseudos and text nodes) are captured into a single texture that can be animated independently.
 
@@ -80,7 +80,7 @@ https://user-images.githubusercontent.com/93594/141118395-8d65da49-a5ab-41c6-845
 
 A mode like this is unnecessary complexity for the share button in the example transition, but gives the developer the freedom they need for the header transition.
 
-- Open question: Do we need this for 'v1'?
+- Open question: Do we need this mode for 'v1'?
 
 ### Nested parts
 
@@ -110,7 +110,7 @@ transition part container
    └─ texture
 ```
 
-- **transition part container**: If the part is created as a "container + child texture", this element will have a width and height of the content area of the original element, and have its computed styles reapplied. If the part is created as a "single texture", this element will have a width and height of the border box of the original element.
+- **transition part container**: If the part is created as a "container + child texture", this element will have a width and height of the content area of the original element, and have its computed styles reapplied. If the part is created as a "single texture", this element will have a width and height of the border box of the original element. In either case, this element has a transform applied to position it in viewport space.
 - **transition part**: This element has a width and height of 100%, and `isolation: isolate`. This wrapper is useful when cross-fading textures (documented later).
 - **texture**: This contains the texture, which may paint outside the parent elements. This would behave like a replaced element, so would work with CSS properties like `object-fit`.
   - Open question: How is painting outside handled? This element could overflow the parents in a developer-visible way, or we could avoid exposing that part somehow (as we currently do with paint overflowing).
@@ -120,7 +120,7 @@ transition part container
 
 ### Mixing in parts of Page-B and associating them with Page-A parts
 
-At this stage, Page-B identifies parts of its own page to be involved in the transition. This happens in the same way as part 1 with one difference: The textures and styles from Page-B will be updated if the underlying page updates. This means things like animated gifs will play, rather than being frozen on whatever frame they were on when they were captured.
+At this stage, Page-B identifies parts of its own page to be involved in the transition. This happens in the same way as part 1 with one difference: The textures and styles from Page-B will be updated if the underlying page updates. This means things like animated gifs will play, rather than being frozen on a single frame.
 
 The developer can associate particular parts from Page-A to parts from Page-B. This would usually be done if they're equivalent. In this case, the headers, share buttons, and roots are equivalent. When this happens, the texture from the Page-B capture is added to the transition part:
 
@@ -216,6 +216,8 @@ This sketch is particularly half-baked. A more concrete proposal will be possibl
 
 We probably shouldn't have both an attribute and CSS property based API, but a JS API could live alongside either of those for more advanced usage.
 
+- Open question: How does the outgoing page offer just the root for transition?
+
 ## Defining the animation
 
 How will Page-B define the animation?
@@ -238,6 +240,7 @@ In all cases, the duration and easing is some undecided default, that could even
 
 - Open question: When will the automatic animation start? When the browser would usually first render Page-B?
 - Open question: Automatic animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
+- Open question: If the developer wants an automatic animation of the root only, how do they define that?
 
 ### CSS animation
 
