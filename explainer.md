@@ -1,624 +1,410 @@
 # Introduction
 
-When a user navigates on the web, they get to see the inner workings of web
-experiences: flash of white followed by a piecemeal rendering phase. This
-sequenced user experience results in a higher cognitive load because the user
-has to connect the dots between where they were, and where they are. In addition,
-it increases the user's perception of loading time as compared with a smooth
-loading animation. For these reasons, most platforms provide easy-to-use primitives
-that enable developers to build seamless transitions:
-[Android](https://developer.android.com/training/transitions/start-activity),
-[iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle)
-and
-[Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
+https://user-images.githubusercontent.com/93594/140955654-fa944c4d-530e-4d3c-8286-50864d59bb0d.mp4
 
-Shared Element Transitions provides developers with the same capability on the
-web, irrespective of whether the transitions are cross-document or
-intra-document (SPA).
+When a user navigates on the web, the viewport abruptly switches from Page-A to Page-B, often in some in-progress state. This can include a flash of white, and elements which seem to disappear only to reappear in the same place. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. In addition, it increases the user's perception of loading time as compared with a smooth loading animation. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
+
+https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
+
+Shared Element Transitions provides developers with the same capability on the web, irrespective of whether the transitions are cross-document (MPA) or intra-document (SPA).
 
 # Use-Cases
 
-A visual demo of some example transition patterns targeted by this feature are
-[here](https://material.io/design/motion/the-motion-system.html#transition-patterns).
-The following is a summary of the semantics of these transition patterns :
+A visual demo of some example transition patterns targeted by this feature is [here](https://material.io/design/motion/the-motion-system.html#transition-patterns). The following is a summary of the semantics of these transition patterns:
 
-*   Root Transitions : The full page content animates between two web pages with
-    an optional static UI element on top.
-    [Shared axis](https://material.io/design/motion/the-motion-system.html#shared-axis)
-    shows an example.
-*   Shared Element to Root Transitions : A persistent UI element morphs into the full
-    page content on the next web page.
-    [Container transform](https://material.io/design/motion/the-motion-system.html#container-transform)
-    shows an example.
-*   Shared Element Transitions : A persistent UI element morphs into another
-    UI element on the next web page. The element's contents and shape can change during
-    this transition. This [video](https://www.youtube.com/watch?v=SGnZN3NE0jA) shows an
-    example.
-*   Entry/Exit Transitions : A UI element animates as it exits or enters the
-    screen. This
-    [issue](https://github.com/WICG/shared-element-transitions/issues/37) shows
-    an example.
-
-These transitions should be feasible in SPAs (Single Page Apps) and MPAs (Multi
-Page Apps).
+* Root Transitions: The full page content animates between two web pages with an optional static UI element on top. Examples 1 & 2 [here](https://material.io/design/motion/the-motion-system.html#shared-axis) are demonstrations of this.
+* Shared Element to Root Transitions: A persistent UI element morphs into the full page content on the next web page. [Container transform](https://material.io/design/motion/the-motion-system.html#container-transform) shows an example.
+* Shared Element Transitions: A persistent UI element morphs into another UI element on the next web page. The element's contents and shape can change during this transition. This [video](https://www.youtube.com/watch?v=SGnZN3NE0jA) shows an example.
+* Entry/Exit Transitions: A UI element animates as it exits or enters the screen. This [issue](https://github.com/WICG/shared-element-transitions/issues/37) shows an example.
 
 # Design
 
-Let's take the example below which shows how the API can be used by a developer
-to animate the background and a shared element on a same origin navigation
-(MPA). The SPA equivalent of this case is one where the old document is mutated
-into the new document via DOM APIs. See [API Extensions](#api-extensions) for
-more code examples.
+The goal is to provide a mechanism and API which will allow simple transitions like above to be specified in CSS, building on CSS animations, but also allow for more complex transitions to be performed via JavaScript, building on the Web Animations API.
 
-Note that the API shape below is tentative and used to explain the core feature
-design.
+This section covers the concepts and mechanisms, while a later section looks at possible API shapes.
 
-### Old Document
+Performing a transition from Page-A to Page-B requires parts of both to be on screen at the same time, potentially moving independently. This is currently impossible in a cross-document navigation, but it's still hard in an SPA (single page app) navigation. You need to make sure that the outgoing state persists along with the incoming state, that it can't receive additional interactions, and ensure the presence of both states doesn't create a confusing experience for those using accessibility technology.
 
-```html
-<html>
-<head>
-  <style>
-    body {
-      background-color: blue;
-    }
-    .animated {
-      position: relative;
-      top: 300px;
-      width: 100px;
-      height: 100px;
-      background-color: red;
-    }
-  </style>
-</head>
-<body>
-  <div class="animated" sharedid="header-id" id="header">Shared Element</div>
-  <a href="new-document.html">Click Me</a>
-</body>
-</html>
+The aim of this design is to allow for representations of both Page-A and Page-B to exist at the same time, without the usability, accessibility, performance, security and memory concerns of having both complete DOM trees alive.
+
+Here's the example that will be used to explain the design:
+
+<img alt="Page-A and Page-B" src="media/pages.png?raw=true">
+
+The concepts and process described in this section apply for both MPA and SPA transition, however the API will differ in parts.
+
+Cross-origin transitions are something we want to tackle, but may have significant differences and restrictions for security reasons. Cross-origin transitions are not covered in this document.
+
+## Part 1: The offering
+
+Before Page-A goes away, it offers up elements to be used in the transition. Generally, this will mean an element that animates independently during the transition. For the example transition, the elements are:
+
+- The header
+- The share button
+- The rest (referred to as the page root)
+
+https://user-images.githubusercontent.com/93594/141104275-6d1fb67a-2f73-41e4-9cef-14676798223b.mp4
+
+Aside from the root, an element offered for a transition has the following restrictions:
+
+- [`contain: paint`](https://developer.mozilla.org/en-US/docs/Web/CSS/contain) which ensures that the element is the containing block for all positioned descendants and generates a stacking context. This implies that the child content will be clipped to the context-box but it can be expanded using ['overflow-clip-margin'](https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-clip-margin). Being a stacking context and a containing block allows the element to be treated as a single unit, whereas paint containment simplifies implementation.
+- [`break-inside: avoid`](https://developer.mozilla.org/en-US/docs/Web/CSS/break-inside) which disallows fragmentation ensuring the element content is a single rect, i.e., it doesn't break across lines or columns, again allowing the element to be treated as a single unit.
+
+- Open question: If the developer tries to break the above rules, what should happen? Is paint containment applied by the browser? Is that element dropped from the transition? Is the whole transition abandoned?
+
+When a developer offers elements for a transition, there are two modes they can choose from:
+
+### As a single image
+
+The entire painting of the element is captured, including things which appear outside of its bounding box such as shadows and blurs, as a single CSS image. The resulting dimensions, transform, and viewport position is also captured so the image can be correctly positioned later.
+
+https://user-images.githubusercontent.com/93594/141118353-d62d19a1-0964-4fa0-880f-bdde656ce899.mp4
+
+The element is captured without the effects (such as opacity and filters) from parent elements. Effects on the element itself are baked into the image. However, the element is captured without transforms, as those transforms are reapplied later.
+
+Capturing an element in this way isn't a new concept to the platform, as it's similar many ways to [`element()`](https://developer.mozilla.org/en-US/docs/Web/CSS/element()) in CSS, although there are some subtle differences documented later.
+
+The root is always captured as a single image, with the other transition elements removed (similar to how compositing works today), and is also clipped to the viewport, as capturing the entire page would take an enormous amount of memory in many cases.
+
+Capturing as a CSS image avoids the interactivity risks, complexities, and memory impact of fully preserving these parts of Page-A as live DOM. On the other hand, it means that the capture will be 'static'. If it includes things like gifs, video, or other animating content, they'll be frozen on the frame they were displaying when captured.
+
+- Open question: Should we have a way to expand the root capture area for particular transitions? For example, transitions that involve vertical movement?
+- Open question: Other elements can also be massive. Do we need a way to limit and control the captured size of those?
+
+This mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently and doesn't stretch. There's another mode for that:
+
+### As the element's computed style + content image
+
+In this mode the computed styles of the element are copied over, so they can be re-rendered beyond just transforming an image.
+
+The children of the element (including pseudos and text nodes) are captured into a single CSS image that can be animated independently.
+
+This allows the developer to animate [animatable CSS properties](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_animated_properties) on the container such as border, background-color, border-radius, opacity. These properties roughly map to the element's box decorations and visual effects. The developer isn't prevented from animating properties like `font-size` but, since the children are captured as an image, changing the `font-size` won't change the visual output.
+
+https://user-images.githubusercontent.com/93594/141118395-8d65da49-a5ab-41c6-8458-917e55d4b77b.mp4
+
+A mode like this is unnecessary complexity for the share button in the example transition, but allows creating richer effects for the header transition.
+
+The second mode where styles are copied to a container element won't be part of 'v1' of this feature.
+
+### Nested transition elements
+
+In the example transition, the content of the header cross-fades from Page-A to Page-B. An even smoother transition could be achieved by also animating the site title and avatar 'chip' independently. However, 'v1' of this proposal disallows a shared element to be nested inside another shared element.
+
+The restriction avoids the need to preserve the hierarchy of shared elements and associated properties (transform, clip, effects inherited by descendants) in the DOM representation created to render the images referenced above. This helps in minimizing the scope for 'v1' of the feature.
+
+- Open question: If the developer tries to do this, what should happen, and when is that verified? Is the nested offering ignored? Is the whole transition abandoned?
+
+## Part 2: The preparation
+
+At this point the state has changed over to Page-B, and Page-A is gone aside from the elements it offered. In the MPA case, this happens when the navigation is complete. In the SPA case, this happens when the DOM is in the Page-B state and the developer signals that the change is complete (how to make that signal is discussed later in the API).
+
+### Setting the stage
+
+The offered elements from Page-A are fixed position at (0,0) in the [top layer](https://fullscreen.spec.whatwg.org/#top-layer), and moved into their previous viewport-relative positions using the cached transform.
+
+The top layer content ensures that the user continues to see Page-A's visuals as Page-B is loading. Note that this may not reproduce the exact rendering on Page-A. For example, the relative paint order of shared elements is preserved in the top layer. But if a shared element was occluded by another element, the latter is painted into the root's image unless it is also offered as a shared element.
+
+
+Page-B is hidden from rendering until the transition is complete.
+
+### How are transition elements represented?
+
+The CSS images and computed properties/styles cached from Page-A are represented as elements with the following nesting:
+
+```
+transition element
+└─ image wrapper
+   └─ image
 ```
 
-### New Document
+- **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element has a transform applied to position it in viewport space.
+- **image wrapper**: This element has a width and height of 100%, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
+- **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
 
-```html
-<html>
-<head>
-  <style>
-    body {
-      background-color: lightblue;
-    }
-    .animated {
-      position: relative;
-      top: 100px;
-      width: 200px;
-      height: 200px;
-      background-color: green;
-    }
+These elements will be addressable via pseudo-elements, although they may be exposed as full elements via a JS API.
 
-    ::shared-container(header-id) {
-      animation: ::shared-container-header-id 1s ease-in;
-    }
-  </style>
-</head>
-<body>
-  <div class="animated" sharedid="header-id" id="header">Shared Element</div>
-</body>
-</html>
+- Open question: How does the UA apply styles to these elements? Particularly styles which are specific to one transition element, such as its transform. Inline styles are simple, but tricky for a developer to override in a stylesheet. An alternative would be to generate a `<style>` and put it, and the transition elements, in a shadow root along with the transition elements.
+- Open question: If these elements live within the top layer, how do they interact with other things which use the top layer, such as fullscreen and `<dialog>`?
+
+### Mixing in elements from Page-B and associating them with transition elements from Page-A
+
+At this stage, Page-B identifies elements on its own page to be involved in the transition. This happens in the same way as the offering phase with one difference: The images and styles from Page-B will be updated if the underlying page updates. This means things like animated gifs will play, rather than being frozen on whatever frame they were on when they were captured.
+
+The developer can associate particular elements from Page-A to elements from Page-B. This would usually be done if they're equivalent. In this case, the headers, share buttons, and roots are equivalent. When this happens, the image from the Page-B element is added to the same image wrapper:
+
+```
+transition element
+└─ image wrapper
+   ├─ image (Page-A)
+   └─ image (Page-B)
 ```
 
-The steps taken by the browser during the transition are as follows.
+This allows for the container to be moved as one, while cross-fading the Page-A and Page-B content. The developer will also have access to the state of shared elements (from Page-A and Page-B) replicated on the container. This state depends on the capture mode (single image vs computed styles + content image).
 
-1.  When the user presses "Click Me" and a navigation is initiated on the old
-    Document, create the following pseudo-elements in the top layer[^1]. Note
-    that a shared element must not be nested inside another shared element :
+Transition elements don't need to be associated with another transition elements, which allows for transitions involving elements that are only in Page-A or only in Page-B.
 
-    a. A container pseudo-element and child replaced pseudo-element for each
-    element with the `sharedid` attribute. These are identified
-    via ::shared-container(shared_id) and ::shared-old(shared_id) respectively,
-    where shared_id is the value of the `sharedid` attribute.
+The root elements of each page are automatically associated.
 
-    b. A replaced pseudo-element for the root/html element identified
-    via ::shared-old-root.
+## Part 3: The transition
 
-    c. The box hierarchy in the top layer stacking context is :
+Everything is now in place to perform the transition. The developer can animate the transition elements created by the UA using the usual APIs, such as CSS and web animations.
 
-    ```
-    ├───shared-old-root
-    ├───shared-container(header-id)
-         ├───shared-old(header-id)
-    ```
+https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
-2.  Apply the following UA stylesheet to the pseudo elements on the old page :
+## Part 4: The end
 
-    ```css
-    ::shared-old-root, ::shared-container(header-id) {
-      position: fixed;
-      top: 0px;
-      left: 0px;
-    }
+When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B.
 
-    ::shared-old-root {
-      width: 100vw;
-      height: 100vh;
-      // The output of element() function on the root element.
-      content: element(html);
-    }
+# The MPA API
 
-    ::shared-container(header-id) {
-      /* This size is is chosen exactly according to the header-id element's
-       border box dimensions after layout. */
-      width: 100px;
-      height: 100px;
+There are a lot of open questions around the API, but this section will give a flavor of the direction.
 
-      /* A transform positioning the element relative to the viewport so that it overlaps
-       exactly with its screen coordinates and orientation it had on the old page. */
-      transform: translate(8px, 308px);
-    }
+Little thought has been giving to naming in these APIs, which will be improved when there's stronger consensus around the concepts.
 
-    ::shared-old(header-id) {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      content: element(header-id);
-    }
-    ```
+## Creating a transition element
 
-3.  Save the output of the element() function for each pseudo element referenced
-    above with the computed size and transform applied to container elements.
-
-4.  Navigate to the new page leaving the last rendered pixels of the old page on
-    screen.
-
-5.  When the new page loads, suppress rendering until resources required for
-    first render have been fetched.
-
-6.  Once the page is ready for first render, create the following pseudo
-    elements in the top layer. The pseudo elements are kept in sync with the
-    corresponding shared elements in the DOM until the transition completes as
-    specified in step 8 :
-
-    a. A container pseudo-element and child replaced pseudo-element for each
-    shared element on the old page using state saved in step 3.
-
-    b. A container pseudo-element and child replaced pseudo-element for each
-    element with the `sharedid` attribute on the new page. The container is
-    reused if already present.
-
-    c. A replaced element for the root/html element identified
-    via ::shared-new-root.
-
-    d. The box hierarchy in the top layer stacking context is :
-
-    ```
-    ├───shared-new-root
-    ├───shared-old-root
-    ├───shared-container(header-id)
-         ├───shared-new(header-id)
-         ├───shared-old(header-id)
-    ```
-
-7.  Apply the following UA stylesheet to the pseudo elements on the new page.
-
-    ```css
-    ::shared-old-root, ::shared-new-root, ::shared-container(header-id) {
-      position: fixed;
-      top: 0px;
-      left: 0px;
-    }
-
-    ::shared-old-root, ::shared-new-root {
-      width: 100vw;
-      height: 100vh;
-      content: element(html);
-    }
-
-    /* Update the container's size and transform to the shared element on the new page. */
-    ::shared-container(header-id) {
-      width: 200px;
-      height: 200px;
-      transform: translate(8px, 108px);
-
-      /* The blend mode referenced below is not currently exposed with mix-blend-mode. */
-      isolation: isolate;
-      mix-blend-mode: [plus-lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_plus_lighter);
-    }
-
-    ::shared-old(header-id), ::shared-new(header-id) {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-    }
-
-    ::shared-old-root {
-      /* This is the saved output referenced in step 3. */
-      content: cached-element(html);
-    }
-    ::shared-old(header-id) {
-      content: cached-element(header-id);
-    }
-
-    ::shared-new-root {
-      content: element(html);
-    }
-    ::shared-new(header-id) {
-      content: element(header-id);
-    }
-
-    /* Default animations added by the UA which can be overridden by the developer stylesheet/script. */
-    @keyframes ::shared-new-fade-in {
-      0% {opacity: 0;}
-      100% {opacity: 1;}
-    }
-    ::shared-new-root, ::shared-new(header-id) {
-      animation: ::shared-new-fade-in 0.25s;
-    }
-
-    @keyframes ::shared-old-fade-out {
-      0% {opacity: 1;}
-      100% {opacity: 0;}
-    }
-    ::shared-old-root, ::shared-old(header-id) {
-      animation: ::shared-old-fade-out 0.25s;
-    }
-
-    /* Generated for each shared element with the syntax shared-container-sharedid. */
-    @keyframes ::shared-container-header-id {
-      from {
-        width: 100px;
-        height: 100px;
-        transform: translate(8px, 308px);
-      }
-    }
-    ::shared-container(header-id) {
-      animation: ::shared-container-header-id 0.25s;
-    }
-    ```
-
-8.  When the transition finishes, remove all pseudo elements from the top layer.
-    The transition finishes when there is no active animation on any pseudo
-    element. See
-    [issue 64](https://github.com/WICG/shared-element-transitions/issues/64) for
-    discussion on this.
-    
-An example simulating the steps above using the existing `element()` function
-is [here](https://jsbin.com/niqiqididu/edit?html,output) (open in Firefox[^2]).
-
-[![Video Link for Shared Element Transition](https://img.youtube.com/vi/QzGEBUW-3U8/0.jpg)](https://youtu.be/QzGEBUW-3U8)
-
-## Animating Box Decoration CSS Properties
-
-A common capability desirable during transitions is to interpolate styles like
-border-radius that change the element's shape. The
-[container transform](https://material.io/design/motion/the-motion-system.html#container-transform)
-examples show a visual demo of that. Painting properties like the element's
-border within its image when using the element() function makes this difficult.
-
-Consider the same example as above with the addition of box decorations to
-the shared element.
-
-### Old Document
-
-```html
-<html>
-<head>
-  <style>
-    body {
-      background-color: blue;
-    }
-
-    .animated {
-      position: relative;
-      top: 300px;
-      width: 100px;
-      height: 100px;
-      background-color: red;
-
-      border: 10px solid black;
-      border-radius: 10% 10%;
-      box-shadow: 0px 0px 10px;
-    }
-
-    .animated:transition {
-      /* Retain the border to ensure it is painted transparent but the box size is unchanged. */
-      border: 10px solid transparent;
-      border-radius: none;
-      box-shadow: none;
-    }
-
-    ::shared-container(header-id) {
-      border: 10px solid black;
-      border-radius: 10% 10%;
-      box-shadow: 0px 0px 10px;
-    }
-
-    /* Offset the image to account for the border in the snapshot. */
-    ::shared-old(header-id) {
-      top: -10px;
-      left: -10px;
-    }
-  </style>
-</head>
-<body>
-  <div class="animated" sharedid="header-id" id="header">Shared Element</div>
-</body>
-</html>
-```
-
-### New Document
-
-```html
-<html>
-<head>
-  <style>
-    body {
-      background-color: blue;
-    }
-
-    .animated {
-      position: relative;
-      top: 100px;
-      width: 200px;
-      height: 200px;
-      background-color: green;
-
-      border: 5px solid black;
-      border-radius: 50% 50%;
-      box-shadow: 0px 0px 5px;
-    }
-
-    .animated:transition {
-      border: 5px solid transparent;
-      border-radius: none;
-      box-shadow: none;
-    }
-
-    ::shared-container(header-id) {
-        border: 5px solid black;
-        border-radius: 50% 50%;
-        box-shadow: 0px 0px 5px;
-    }
-
-    ::shared-new(header-id) {
-      top: -5px;
-      left: -5px;
-    }
-
-    @keyframes border-animation {
-      from {
-        border: 10px solid black;
-        border-radius: 10% 10%;
-        box-shadow: 0px 0px 10px;
-      }
-    }
-    ::shared-container(header-id) {
-      animation: ::shared-container-header-id 1s ease-in, border-animation 1s ease-in;
-    }
-
-    @keyframes position-animation {
-      from {
-        top: -10px;
-        left: -10px;
-      }
-      to {
-        top: -5px;
-        left: -5px;
-      }
-    }
-    ::shared-old(header-id), ::shared-new(header-id) {
-      animation: position-animation 1s ease-in;
-    }
-
-  </style>
-</head>
-<body>
-  <div class="animated" sharedid="header-id" id="header">Shared Element</div>
-</body>
-</html>
-```
-
-The additional steps taken by the browser in the example above are :
-
-i. When a pseudo element is created for shared elements in the old page in step
-1, the pseudo-class "transition" is enabled for each shared element.
-
-ii. In step 3 when saving state from the old page, the completed ComputedStyle
-on the pseudo elements is saved in addition to the computed size and transform.
-
-iii. In step 7 when applying a UA stylesheet to pseudo elements on the new page,
-the saved style is also applied to the old pseudo elements :
+### CSS properties
 
 ```css
-::shared-container(header-id) {
-  /* This is the saved output referenced in step 3. Applied before updating to
-   values from the shared element in the new DOM. */
-  width: 100px;
-  height: 100px;
-  transform: translate(8px, 308px);
-  border: 10px solid black;
-  border-radius: 10% 10%;
-  box-shadow: 0px 0px 10px;
-}
-
-::shared-old(header-id) {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-
-  /* This is the saved output referenced in step 3. */
-  content: cached-element(header-id);
-  top: -10px;
-  left: -10px;
+.header {
+  page-transition-tag: header;
+  page-transition-capture: container-and-child;
 }
 ```
 
-An example simulating the steps above using the existing `element()` function
-is [here](https://jsbin.com/vesokanumu/edit?html,output) (open in Firefox).
+Setting a `page-transition-tag` marks this element as a transition element, and the `page-transition-capture` property is used to indicate how it's captured (as a single image vs as a computed style + content image).
 
-[![Video Link for Shared Element Transition](https://img.youtube.com/vi/SGnZN3NE0jA/0.jpg)](https://youtu.be/SGnZN3NE0jA)
+Multiple elements could have the same `page-transition-tag` value, which is useful for aggregate content such as user comments.
 
-## Modifications to element()
+Elements on Page-A and Page-B which have the same `page-transition-tag` are automatically associated with each other. If multiple elements have the same value, they're associated in DOM order.
 
-The following changes will be made to the element() spec as a part of this
-proposal. The element captured by this function is the target element :
+Using CSS properties means values can change depending on viewport (`@media`) and browser support (`@supports`).
 
-*   The target element must have paint containment (contain:paint) to ensure the
-    element is the containing block for all positioned descendents and generates
-    a stacking context.
-*   The target element must disallow fragmentation (similar to
-    `break-inside:avoid`).
-*   A new cached-element() function is introduced to refer to the saved output
-    of the element() function in step 3 of the design. (This part may not be
-    developer exposed though.)
-*   Nested shared elements are omitted from the output of element() function.
-*   Elements captured using element() and displayed via pseudo-elements during
-    the transition are not painted in the regular DOM - they behave as if they
-    have `content-visibility: hidden`, except that they don't have
-    `contain:size`.
-*   The special cases when running the `element()` function on the html element
-    are :
-    *   The natural size for the generated image is the visual viewport bounds.
-    *   When creating the image, the element is drawn on a canvas with the
-        background color of the document.
-
-# API Extensions
-
-## SPA
-
-The SPA code requires the addition of script APIs which provide the equivalent
-of "navigation" and "ready for first render" events referenced in step 1 and 4
-of the design. The rest of the code is identical between MPA and SPA.
+### JS API
 
 ```js
-function handleTransition() {
-  document.documentTransition.prepare(async () => {
-    await loadNextPage();
+// In Page-A
+addEventListener('navigate', (event) => {
+  event.prepareSameOriginPageTransition((transition) => {
+    transition.offerElement('header', document.querySelector('.header'), {
+      capture: 'container-and-child',
+    });
+
+    transition.setData({…});
   });
+});
+```
+
+Expanding on the capabilities of the CSS properties, a JS API allows the developer to change which parts are offered depending on the destination of the navigation, and the direction of navigation (back vs forward). This builds on top of the [app-history API](https://github.com/WICG/app-history).
+
+Also, data can be provided via `setData`. This can be anything structured-clonable, and will be made available to Page-B.
+
+- Open question: Is this a tight-coupling with app-history, or could it be usable without it?
+- Open question: Do we need `offerElement`? The same thing could be done by adding the CSS properties.
+
+```js
+// In Page-B
+document.performTransition((transition) => {
+  console.log(transition.data);
+  const pageAHeader = transition.offeredElements.get('header');
+  const pageBHeader = transition.createTransitionElement(document.querySelector('.header'), {
+    capture: 'container-and-child',
+  });
+  transition.matchElements(pageAHeader, pageBHeader);
+});
+```
+
+This sketch is particularly half-baked. A more concrete proposal will be possible when more of the concepts are decided.
+
+- Open question: Do we need `createTransitionElement`? It could be done via adding CSS properties, but it might be clumsy if the developer is going to immediately remove the properties afterwards.
+- Open question: How does the outgoing page offer just the root for transition?
+- Open question: When is the `performTransition` callback called?
+
+## Defining the animation
+
+How will Page-B define the animation?
+
+### Default animation
+
+The potential default animations setup for the different cases are as follows. Note all of these can be overridden by the developer:
+
+- If an element exists in Page-A only (exit animation), a fade animation takes its container from opacity 1 to 0.
+- If an element exists in Page-B only (entry animation), a fade animation takes its container from opacity 0 to 1.
+- If an element exists in both Page-A and Page-B, and both are 'container and content', an animation takes the container from Page-A styles to Page-B styles (which will include the transform used for positioning), while cross-fading the two images.
+- If an element exists in both Page-A and Page-B, and neither are 'container and child', a transform animation takes its container from Page-A size/transform to Page-B size/transform, while cross-fading the two images.
+
+- Open question: What if the Page-A element is 'container and child' but the Page-B element is 'single image'?
+
+Because the images are sized to 100% of the container, the images will also change size throughout the transition. How these are scaled can be changed using regular CSS features like `object-fit`.
+
+In all cases, the duration and easing is some undecided default, that could even be platform independent.
+
+- Open question: When will the default animation start? When the browser would usually first render Page-B?
+- Open question: Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
+- Open question: If the developer wants an default animation of the root only, how do they define that?
+
+### CSS animation
+
+CSS can be used to build on default animations, or override the default.
+
+```css
+::page-transition-container(header) {
+  /* … */
 }
 ```
 
-*   The prepare API initiates step 1 to 3 to save the state of shared elements
-    in the current DOM. The API takes a callback once the save operation
-    finishes executing.
-*   The async callback initiates load of the next page and initiates step 4
-    which suppresses rendering.
-*   When the callback returns, the new DOM is considered ready for first render.
-    This starts step 5 onwards to create new pseudo elements and start
-    animations.
+Element selectors:
 
-## Additional Script APIs
+- `::page-transition-container(name)` - Select the transition containers of a given `page-transition-tag`.
+- `::page-transition-image-wrapper(page-transition-tag)` - Select the transition parts of a given `page-transition-tag`.
+- `::page-transition-image-outgoing(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
+- `::page-transition-image-incoming(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
+- `::page-transition-root-outgoing` - Select the outgoing root image.
+- `::page-transition-root-incoming` - Select the incoming root image.
+- `::page-transition-root-container` - Useful for cases where something needs to be rendered underneath the root images.
 
-The following example shows how developers can configure the transition in
-script for an MPA.
+These will be selecting elements in a UA-created shadow DOM.
 
-### Old Document
+```css
+::page-transition-container(header) {
+  animation-delay: 300ms;
+}
+```
+
+CSS can be used to make changes to the default animation, or override `animation-name` to remove the default.
+
+### JavaScript access to elements
+
+So far the transition elements have been addressed by pseudo-element selectors, but JavaScript could be given access to the elements. This would be done via a shadow root.
+
+This isn't unusual, as developer currently use things like [`::placeholder`](https://developer.mozilla.org/en-US/docs/Web/CSS/::placeholder) to address things in a UA shadow root within `<input>`. We can't expose the shadow root within `<input>`, because the structure is non-standard, however, for transitions, the structure will be standardized, so it can be exposed.
 
 ```js
-addEventListener("navigate", (event) => {
-  // Add sharedid attribute to elements to offer for the transition
-  // based on current document state.
-  document.querySelector(".header").sharedid="header-id";
-
-  // setData can be used to pass opaque contextual information to the
-  // new page. The argument type is |any|.
-  document.documentTransition.setData({ version: 123 });
+// In Page-B
+document.performTransition((transition) => {
+  // Build up transition parts, then…
+  transition.root.querySelector('[part=header]').animate(…);
 });
 ```
 
-### New Document
+- Open question: What's the deadline for calling `performTransition`?
+
+If the 'stage' of the transition is exposed as a shadow root like this, the developer can interact with the elements in a regular way. The developer could even create elements specifically for the transition.
+
+- Open question: Is the freedom above a feature or a bug?
+
+## Signaling the end of a page transition
+
+At the start of the transition, the browser could gather all the `Animation`s active on the stage, and assume the animation is complete once all animations finish.
+
+In addition, the JS API could include a way to override this by letting the developer provide a promise which keeps the transition active, allowing for animations driven some other way, such as `requestAnimationFrame`.
+
+This is discussed in [#64](https://github.com/WICG/shared-element-transitions/issues/64).
+
+## Example
+
+Using the sketches above, here's how the example Page-A to Page-B transition could be done:
+
+https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
+
+In Page-A:
+
+```css
+.header {
+  page-transition-tag: header;
+  page-transition-capture: container-and-child;
+}
+
+.share-button {
+  page-transition-tag: share-button;
+}
+```
+
+In Page-B:
+
+```css
+.header {
+  page-transition-tag: header;
+  page-transition-capture: container-and-child;
+}
+
+.share-button {
+  page-transition-tag: share-button;
+}
+
+/* Slide the roots from right to left */
+@keyframes slide-left {
+  to { transform: translateX(-100%); }
+}
+
+::page-transition-root-outgoing {
+  animation-name: slide-left;
+}
+
+::page-transition-root-incoming {
+  left: 100%;
+  animation-name: slide-left;
+}
+
+/* Prevent the header content from stretching */
+::page-transition-image-outgoing(share-button),
+::page-transition-image-incoming(share-button) {
+  object-fit: cover;
+}
+```
+
+# Single-Page-App API
+
+The mechanism for cross-document transitions and SPA transitions involves the same phases, so an SPA API will expose those parts in the same page.
+
+Half-baked sketch:
 
 ```js
-requestAnimationFrame(() => {
-  let pendingTransition = document.documentTransition.getPendingTransition();
-  if (pendingTransition.getData().version !== 123)
-    return;
-
-  // |offeredTransitionElements| provides a list of objects to access state
-  // saved from the old page.
-  let oldHeader = pendingTransition.offeredTransitionItems.get("header-id");
-  if (oldHeader) {
-    // Add sharedid attribute to elements animated in the new DOM.
-    document.querySelector(".header").sharedid="header-id";
-
-    // Query the style information saved from the old page.
-    let oldHeaderStyle = oldHeader.getContainerComputedStyle();
-
-    // The pseudo elements for each shared element are associated with the root element.
-    // The existing [pseudoElement](https://drafts.csswg.org/web-animations-1/#dom-keyframeeffect-pseudoelement) option can be used
-    // to target them with Web Animations API.
-    document.documentElement.animate(
-      [{ width: oldHeaderStyle.width,
-        height: oldHeaderStyle.height,
-        transform: oldHeaderStyle.transform }],
-      { duration: 1000,
-        pseudoElement: '::shared-container(header-id)' });
-  }
+document.documentTransition.prepare(async (transition) => {
+  // …Identify State-A elements to capture, then:
+  await updatePageStateSomehow();
+  // The page is now in State-B.
+  // …Identify State-B elements to capture, then:
+  transition.start();
 });
 ```
 
-# Alternatives Considered
+# Cross-fading
 
-## Heirarchical Properties
+Cross-fading two DOM elements is currently impossible if both layers feature transparency. This is due to the default composition operation: black with 50% opacity layered over black with 50% opacity becomes black with 75% opacity.
 
-This proposal disallows a shared element to be nested inside another shared
-element. The restriction avoids the need to preserve the hierarchy of the shared
-elements and associated properties (transform, clip, effects inherited by
-descendents) when creating pseudo elements. This is a consideration for future
-iterations of the feature.
+However, the [plus-lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_plus_lighter) compositing operation does the right thing when isolated to a set of elements whose `opacity` values add to 1. The "image wrapper" is meant to provide this isolation.
 
-## Container/Child Split
+Allowing `mix-blend-mode` to be set to `plus-lighter` will enable developers to create real cross-fades between elements for this feature and elsewhere.
 
-One consideration is to render each shared element using a replaced element
-directly instead of creating a container element. The motivation behind this
-split is to provide a stacking context to cross-fade the content of old and new
-shared elements. This is necessary to ensure blending identical pixels is a
-no-op using
-[plus-lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_plus_lighter)
-blending. While same-origin transitions could work around this, it enables
-future extensibility for cross-origin transitions where cross-fading identical
-images would be common.
+# Relation to `element()`
 
-## Natively Supporting Animating Box Decoration CSS Properties
+CSS has an [`element()`](https://drafts.csswg.org/css-images-4/#element-notation) feature which allows the appearance of an element to be used as an image.
 
-An alternate approach to the setup described in
-[Animating Box Decoration CSS Properties](#live-animatable-properties) is to
-support this natively in the browser by introducing a new `content-element()`
-function. This function would behave similarly to the `element()` function
-except skipping the following properties when painting the element: box
-decorations and visual effects which generate a stacking context. The image
-would also be sized to the element's content-box (as opposed to the border-box
-used by the element() function). The motivation for supporting this natively
-would be to make these properties animatable instead of requiring developers to
-implement it themselves.
+This doesn't quite match either of the cases where we need to capture an element as an image.
+
+When capturing 'as a single image', it seems much easier for developers if we expand the capture to include things outside the border box, such as box shadows. `element()` clips at the border box.
+
+When capturing as a 'computed style + content image', we capture the combination of the element's children as image, clipped to the content box. Again this is different to `element()`.
+
+However, these variations could be included in `element()` using modifiers or similarly named functions (e.g. `element-children()`).
 
 # Security/Privacy Considerations
 
-The security considerations below cover same-origin transitions. These are a
-subset of what's required for cross-origin transitions :
+The security considerations below cover same-origin transitions.
 
-*   Script can never read pixel content for images generated using the element()
-    function. This is necessary since the document may embed cross-origin
-    content (iframes, CORS resources, etc.) and multiple restricted user
-    information (visited links history, dictionary used for spell check, etc.)
-*   The Live Animatable Properties could reference resources which are
-    restricted in the new document for an MPA navigation. For example, the old
-    page may use a cross-origin image for border-image which can't be accessed
-    by the new page due to differences in
-    [COEP](https://wicg.github.io/cross-origin-embedder-policy/). Fetching these
-    styles will fail on the new page. For same-origin navigations, the developer
-    already has knowledge of the cross-origin policy on the new page. They can
-    ensure not to reference cross-origin resources in the properties made live.
+* Script can never read pixel content in the images. This is necessary since the document may embed cross-origin content (iframes, CORS resources, etc.) and multiple restricted user information (visited links history, dictionary used for spell check, etc.)
+* If an element is captured as a 'computed style + content image', any external resources specified on the container, such as background images, will be re-fetched in the context of the new page to account for differences in sandboxing.
 
-# Related Reading
+Cross-origin transitions aren't yet defined, but are likely to be heavily restricted.
 
-An aspect of the feature that needs to be defined is the
-[type of navigations](https://github.com/WICG/app-history#appendix-types-of-navigations)
-that the old page can configure. We expect this will closely align with the
-navigations that can be observed by the page using app-history's
-[navigate event](https://github.com/WICG/app-history#restrictions-on-firing-canceling-and-responding).
+# Interactivity and accessibility
 
-[^1]: The pseudo elements in the top layer will not have an associated
-    [::backdrop](https://fullscreen.spec.whatwg.org/#::backdrop-pseudo-element)
-    that is created for other elements in the top layer.
-[^2]: There is a double draw of the shared element in the demo since it
-    continues to paint in the original DOM/the snapshot of the root element.
-    This is addressed in the proposed modifications to the element() function.
+Page transitions are a purely visual affordance. In terms of interactivity, transition elements will behave like `div`s regardless of the original element.
+
+Developers could break this intent by adding interactivity directly to the transition element, e.g. by deliberately adding a `tabindex` attribute. But this isn't recommended.
+
+The page transition stage will be hidden from assistive technologies such as screen readers.
+
+- Open question: Should hit-testing ignore transition elements?
