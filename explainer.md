@@ -33,7 +33,7 @@ Here's the example that will be used to explain the design:
 
 The concepts and process described in this section apply for both MPA and SPA transition, however the API will differ in parts.
 
-Cross-origin transitions are something we want to tackle, but may have significant differences and restrictions for security reasons. This, cross-origin transitions are not covered in this document.
+Cross-origin transitions are something we want to tackle, but may have significant differences and restrictions for security reasons. Cross-origin transitions are not covered in this document.
 
 ## Part 1: The offering
 
@@ -79,7 +79,7 @@ In this mode the computed styles of the element are copied over, so they can be 
 
 The children of the element (including pseudos and text nodes) are captured into a single CSS image that can be animated independently.
 
-This allows the developer to animate [animatable CSS properties](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_animated_properties) on the container such as border, background-color, border-radius, opacity. These properties roughly map to the element's box decorations and visual effects. The developer isn't prevents from animating properties like `font-size`, but since the children are captured as an image, it changing the `font-size` won't change the visual output.
+This allows the developer to animate [animatable CSS properties](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_animated_properties) on the container such as border, background-color, border-radius, opacity. These properties roughly map to the element's box decorations and visual effects. The developer isn't prevented from animating properties like `font-size` but, since the children are captured as an image, changing the `font-size` won't change the visual output.
 
 https://user-images.githubusercontent.com/93594/141118395-8d65da49-a5ab-41c6-8458-917e55d4b77b.mp4
 
@@ -103,9 +103,8 @@ At this point the state has changed over to Page-B, and Page-A is gone aside fro
 
 The offered elements from Page-A are fixed position at (0,0) in the [top layer](https://fullscreen.spec.whatwg.org/#top-layer), and moved into their previous viewport-relative positions using the cached transform.
 
-The overlay ensures that the user continues to see Page-A's visuals as Page-B is loading. Note that this may not reproduce the exact rendering on Page-A. For example, the relative paint order of shared elements is preserved in the overlay. But if a shared element was occluded by another element, the latter is painted into the root's image unless it is also offered as a shared element.
+The top layer content ensures that the user continues to see Page-A's visuals as Page-B is loading. Note that this may not reproduce the exact rendering on Page-A. For example, the relative paint order of shared elements is preserved in the top layer. But if a shared element was occluded by another element, the latter is painted into the root's image unless it is also offered as a shared element.
 
-Ideally, there won't be a visual change from the final rendering of Page-A. However, the non-root parts will always render on top of the root, whereas the original page may have drawn other things on top of the offered parts.
 
 Page-B is hidden from rendering until the transition is complete.
 
@@ -120,7 +119,7 @@ transition element
 ```
 
 - **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element has a transform applied to position it in viewport space.
-- **image wrapper**: This element has a width and height of 100%, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading textures (documented later).
+- **image wrapper**: This element has a width and height of 100%, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
 - **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
 
 These elements will be addressable via pseudo-elements, although they may be exposed as full elements via a JS API.
@@ -235,9 +234,9 @@ The potential default animations setup for the different cases are as follows. N
 - If an element exists in both Page-A and Page-B, and both are 'container and content', an animation takes the container from Page-A styles to Page-B styles (which will include the transform used for positioning), while cross-fading the two images.
 - If an element exists in both Page-A and Page-B, and neither are 'container and child', a transform animation takes its container from Page-A size/transform to Page-B size/transform, while cross-fading the two images.
 
-- Open question: What if the Page-A element is 'container and child' but the Page-B element is 'single texture'?
+- Open question: What if the Page-A element is 'container and child' but the Page-B element is 'single image'?
 
-Because the textures are sized to 100% of the container, the textures will also change size throughout the transition. How these are scaled can be changed using regular CSS features like `object-fit`.
+Because the images are sized to 100% of the container, the images will also change size throughout the transition. How these are scaled can be changed using regular CSS features like `object-fit`.
 
 In all cases, the duration and easing is some undecided default, that could even be platform independent.
 
@@ -349,8 +348,8 @@ In Page-B:
 }
 
 /* Prevent the header content from stretching */
-::page-transition-texture-outgoing(share-button),
-::page-transition-texture-incoming(share-button) {
+::page-transition-image-outgoing(share-button),
+::page-transition-image-incoming(share-button) {
   object-fit: cover;
 }
 ```
