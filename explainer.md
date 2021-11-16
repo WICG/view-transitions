@@ -50,7 +50,7 @@ Aside from the root, an element offered for a transition has the following restr
 - [`contain: paint`](https://developer.mozilla.org/en-US/docs/Web/CSS/contain) which ensures that the element is the containing block for all positioned descendants and generates a stacking context. This implies that the child content will be clipped to the context-box but it can be expanded using ['overflow-clip-margin'](https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-clip-margin). Being a stacking context and a containing block allows the element to be treated as a single unit, whereas paint containment simplifies implementation.
 - [`break-inside: avoid`](https://developer.mozilla.org/en-US/docs/Web/CSS/break-inside) which disallows fragmentation ensuring the element content is a single rect, i.e., it doesn't break across lines or columns, again allowing the element to be treated as a single unit.
 
-- Open question: If the developer tries to break the above rules, what should happen? Is paint containment applied by the browser? Is that element dropped from the transition? Is the whole transition abandoned?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/71): If the developer tries to break the above rules, what should happen? Is paint containment applied by the browser? Is that element dropped from the transition? Is the whole transition abandoned?
 
 When a developer offers elements for a transition, there are two modes they can choose from:
 
@@ -68,8 +68,8 @@ The root is always captured as a single image, with the other transition element
 
 Capturing as a CSS image avoids the interactivity risks, complexities, and memory impact of fully preserving these parts of Page-A as live DOM. On the other hand, it means that the capture will be 'static'. If it includes things like gifs, video, or other animating content, they'll be frozen on the frame they were displaying when captured.
 
-- Open question: Should we have a way to expand the root capture area for particular transitions? For example, transitions that involve vertical movement?
-- Open question: Other elements can also be massive. Do we need a way to limit and control the captured size of those?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/72): Should we have a way to expand the root capture area for particular transitions? For example, transitions that involve vertical movement?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/73): Other elements can also be massive. Do we need a way to limit and control the captured size of those?
 
 This mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently and doesn't stretch. There's another mode for that:
 
@@ -93,7 +93,7 @@ In the example transition, the content of the header cross-fades from Page-A to 
 
 The restriction avoids the need to preserve the hierarchy of shared elements and associated properties (transform, clip, effects inherited by descendants) in the DOM representation created to render the images referenced above. This helps in minimizing the scope for 'v1' of the feature.
 
-- Open question: If the developer tries to do this, what should happen, and when is that verified? Is the nested offering ignored? Is the whole transition abandoned?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/74): If the developer tries to do this, what should happen, and when is that verified? Is the nested offering ignored? Is the whole transition abandoned?
 
 ## Part 2: The preparation
 
@@ -124,8 +124,8 @@ transition element
 
 These elements will be addressable via pseudo-elements, although they may be exposed as full elements via a JS API.
 
-- Open question: How does the UA apply styles to these elements? Particularly styles which are specific to one transition element, such as its transform. Inline styles are simple, but tricky for a developer to override in a stylesheet. An alternative would be to generate a `<style>` and put it, and the transition elements, in a shadow root along with the transition elements.
-- Open question: If these elements live within the top layer, how do they interact with other things which use the top layer, such as fullscreen and `<dialog>`?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/75): How does the UA apply styles to these elements? Particularly styles which are specific to one transition element, such as its transform. Inline styles are simple, but tricky for a developer to override in a stylesheet. An alternative would be to generate a `<style>` and put it, and the transition elements, in a shadow root along with the transition elements.
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/76): If these elements live within the top layer, how do they interact with other things which use the top layer, such as fullscreen and `<dialog>`?
 
 ### Mixing in elements from Page-B and associating them with transition elements from Page-A
 
@@ -200,8 +200,8 @@ Expanding on the capabilities of the CSS properties, a JS API allows the develop
 
 Also, data can be provided via `setData`. This can be anything structured-clonable, and will be made available to Page-B.
 
-- Open question: Is this a tight-coupling with app-history, or could it be usable without it?
-- Open question: Do we need `offerElement`? The same thing could be done by adding the CSS properties.
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/77): Is this a tight-coupling with app-history, or could it be usable without it?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/78): Do we need `offerElement`? The same thing could be done by adding the CSS properties.
 
 ```js
 // In Page-B
@@ -217,9 +217,9 @@ document.performTransition((transition) => {
 
 This sketch is particularly half-baked. A more concrete proposal will be possible when more of the concepts are decided.
 
-- Open question: Do we need `createTransitionElement`? It could be done via adding CSS properties, but it might be clumsy if the developer is going to immediately remove the properties afterwards.
-- Open question: How does the outgoing page offer just the root for transition?
-- Open question: When is the `performTransition` callback called?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/79): Do we need `createTransitionElement`? It could be done via adding CSS properties, but it might be clumsy if the developer is going to immediately remove the properties afterwards.
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/80): How does the outgoing page offer just the root for transition?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/81): When is the `performTransition` callback called?
 
 ## Defining the animation
 
@@ -234,15 +234,15 @@ The potential default animations setup for the different cases are as follows. N
 - If an element exists in both Page-A and Page-B, and both are 'container and content', an animation takes the container from Page-A styles to Page-B styles (which will include the transform used for positioning), while cross-fading the two images.
 - If an element exists in both Page-A and Page-B, and neither are 'container and child', a transform animation takes its container from Page-A size/transform to Page-B size/transform, while cross-fading the two images.
 
-- Open question: What if the Page-A element is 'container and child' but the Page-B element is 'single image'?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/82): What if the Page-A element is 'container and child' but the Page-B element is 'single image'?
 
 Because the images are sized to 100% of the container, the images will also change size throughout the transition. How these are scaled can be changed using regular CSS features like `object-fit`.
 
 In all cases, the duration and easing is some undecided default, that could even be platform independent.
 
-- Open question: When will the default animation start? When the browser would usually first render Page-B?
-- Open question: Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
-- Open question: If the developer wants an default animation of the root only, how do they define that?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/83): When will the default animation start? When the browser would usually first render Page-B?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/84): Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/85): If the developer wants a default animation of the root only, how do they define that?
 
 ### CSS animation
 
@@ -288,11 +288,11 @@ document.performTransition((transition) => {
 });
 ```
 
-- Open question: What's the deadline for calling `performTransition`?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/86) What's the deadline for calling `performTransition`?
 
 If the 'stage' of the transition is exposed as a shadow root like this, the developer can interact with the elements in a regular way. The developer could even create elements specifically for the transition.
 
-- Open question: Is the freedom above a feature or a bug?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/87): Is the freedom above a feature or a bug?
 
 ## Signaling the end of a page transition
 
@@ -407,4 +407,4 @@ Developers could break this intent by adding interactivity directly to the trans
 
 The page transition stage will be hidden from assistive technologies such as screen readers.
 
-- Open question: Should hit-testing ignore transition elements?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/88): Should hit-testing ignore transition elements?
