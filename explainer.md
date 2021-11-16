@@ -388,7 +388,7 @@ When capturing 'as a single image', it seems much easier for developers if we ex
 
 When capturing as a 'computed style + content image', we capture the combination of the element's children as image, clipped to the content box. Again this is different to `element()`.
 
-However, these variations could be included in `element()` using modifiers or similarly named functions (e.g. `element-children()`).
+However, these variations could be included in `element()` using modifiers or similarly named functions (e.g. `element-children()`). [Here](https://jsbin.com/bisoleziyi/edit?html,output) is a polyfill example of a single image mode transition built using the existing element() support in Firefox.
 
 # Security/Privacy Considerations
 
