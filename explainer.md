@@ -105,7 +105,6 @@ The offered elements from Page-A are fixed position at (0,0) in the [top layer](
 
 The top layer content ensures that the user continues to see Page-A's visuals as Page-B is loading. Note that this may not reproduce the exact rendering on Page-A. For example, the relative paint order of shared elements is preserved in the top layer. But if a shared element was occluded by another element, the latter is painted into the root's image unless it is also offered as a shared element.
 
-
 Page-B is hidden from rendering until the transition is complete.
 
 ### How are transition elements represented?
@@ -145,6 +144,10 @@ This allows for the container to be moved as one, while cross-fading the Page-A 
 Transition elements don't need to be associated with another transition elements, which allows for transitions involving elements that are only in Page-A or only in Page-B.
 
 The root elements of each page are automatically associated.
+
+Note that the order in which the transition elements are painted can be configured by UA and/or developer stylesheets using z-index.
+
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/23): How should the default UA animation order these elements? And also handle a change in associated elements between the 2 pages. 
 
 ## Part 3: The transition
 
