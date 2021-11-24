@@ -89,15 +89,15 @@ The second mode where styles are copied to a container element won't be part of 
 
 ### Nested transition elements
 
-In the example transition, the content of the header cross-fades from Page-A to Page-B. An even smoother transition could be achieved by also animating the site title and avatar 'chip' independently. When a developer offers nested shared elements, the state can be captured in the following two modes :
+In the example transition, the content of the header cross-fades from Page-A to Page-B. An even smoother transition could be achieved by also animating the site title and avatar 'chip' independently. When a developer offers nested shared elements, the state can be captured in one of the following two modes:
 
-### Flat List Mode
+#### Flat List Mode
 The content of all nested shared elements is removed when generating the image for a shared element so they can be animated as independent images. This is similar to removing the content of shared elements from the root image.
 
 In addition to the element's image, the browser also caches the element's border-box bounds and a transform positioning the element relative to the viewport so that it overlaps exactly with its quad on the old page.
 
-## Hierarchy Mode
-In this mode, the hierarchy of shared elements is preserved along with a transform which is relative to its nearest ancestor shared element instead of the viewport. When used with the "computed style + content image" mode, this also preserves other hierarchical properties (clip, effects inherited by descendants) that a shared element inherits from its ancestor. 
+#### Hierarchy Mode
+In this mode, the hierarchy of shared elements is preserved along with a transform which is relative to its nearest ancestor shared element instead of the viewport. When used with the "computed style + content image" mode, this also preserves other hierarchical properties (clip, inherited effects) that a shared element inherits from its ancestor. 
 
 This allows nested shared elements to continue to be positioned and clipped relative to their ancestor shared elements during a transition. This is proposed as a separate mode to minimize the scope for 'v1' of the feature. See [issue](https://github.com/WICG/shared-element-transitions/issues/74) for detailed discussion.
 
@@ -125,7 +125,7 @@ transition element
 - **image wrapper**: This element has a width and height of 100%, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
 - **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
 
-These elements will be addressable via pseudo-elements.
+These elements will be accessible to the developer via pseudo-elements.
 
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/75): How does the UA apply styles to these elements? Particularly styles which are specific to one transition element, such as its transform. Inline styles are simple, but tricky for a developer to override in a stylesheet. An alternative would be to generate a `<style>` and put it, and the transition elements, in a shadow root along with the transition elements.
 
@@ -235,8 +235,7 @@ document.performTransition((transition) => {
 This sketch is particularly half-baked. A more concrete proposal will be possible when more of the concepts are decided.
 
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/79): Do we need `createTransitionElement`? It could be done via adding CSS properties, but it might be clumsy if the developer is going to immediately remove the properties afterwards.
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/80): How does the outgoing page offer just the 
-for transition?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/80): How does the outgoing page offer just the root for transition?
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/81): When is the `performTransition` callback called?
 
 ## Defining the animation
