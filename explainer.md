@@ -50,7 +50,7 @@ Aside from the root, an element offered for a transition has the following restr
 - [`contain: paint`](https://developer.mozilla.org/en-US/docs/Web/CSS/contain) which ensures that the element is the containing block for all positioned descendants and generates a stacking context. This implies that the child content will be clipped to the context-box but it can be expanded using ['overflow-clip-margin'](https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-clip-margin). Being a stacking context and a containing block allows the element to be treated as a single unit, whereas paint containment simplifies implementation.
 - [`break-inside: avoid`](https://developer.mozilla.org/en-US/docs/Web/CSS/break-inside) which disallows fragmentation ensuring the element content is a single rect, i.e., it doesn't break across lines or columns, again allowing the element to be treated as a single unit.
 
-The developer must add the properties above to an element's style if its offered for a transition. If this constraint is not satisfied at any point during the transition, the transition is aborted. See [issue](https://github.com/WICG/shared-element-transitions/issues/71) for detailed discussion.
+The developer must add the properties above to an element's style if its offered for a transition. This constraint is verified during style resolution for all rendering lifecycle updates during a transition. If not satisfied, the transition is aborted. See [issue](https://github.com/WICG/shared-element-transitions/issues/71) for detailed discussion.
 
 When a developer offers elements for a transition, there are two modes they can choose from:
 
