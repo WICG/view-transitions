@@ -62,7 +62,7 @@ https://user-images.githubusercontent.com/93594/141118353-d62d19a1-0964-4fa0-880
 
 The element is captured without the effects (such as opacity and filters) from parent elements. Effects on the element itself are baked into the image. However, the element is captured without transforms, as those transforms are reapplied later.
 
-Capturing an element in this way isn't a new concept to the platform, as it's similar many ways to [`element()`](https://developer.mozilla.org/en-US/docs/Web/CSS/element()) in CSS, although there are some subtle differences documented later.
+Capturing an element in this way isn't a new concept to the platform, as [`element()`](<https://developer.mozilla.org/en-US/docs/Web/CSS/element()>) in CSS performs a similar action. The differences are documented later.
 
 The root is always captured as a single image, with the other transition elements removed (similar to how compositing works today), and is also clipped to the viewport, as capturing the entire page would take an enormous amount of memory in many cases.
 
@@ -89,17 +89,21 @@ The second mode where styles are copied to a container element won't be part of 
 
 ### Nested transition elements
 
-In the example transition, the content of the header cross-fades from Page-A to Page-B. An even smoother transition could be achieved by also animating the site title and avatar 'chip' independently. When a developer offers nested shared elements, the state can be captured in one of the following two modes:
+In the example transition, the content of the header cross-fades from Page-A to Page-B. An even smoother transition could be achieved by also animating the site title and avatar 'chip' independently. To allow for this, an offered element can contain other offered elements.
 
-#### Flat List Mode
-The content of all nested shared elements is removed when generating the image for a shared element so they can be animated as independent images. This is similar to removing the content of shared elements from the root image.
+When an element is captured, its painting is 'lifted' from the parent offered element, which may be the root. This is similar to how browsers handle composited elements.
 
-In addition to the element's image, the browser also caches the element's border-box bounds and a transform positioning the element relative to the viewport so that it overlaps exactly with its quad on the old page.
+### Retaining hierarchy during a transition
 
-#### Hierarchy Mode
-In this mode, the hierarchy of shared elements is preserved along with a transform which is relative to its nearest ancestor shared element instead of the viewport. When used with the "computed style + content image" mode, this also preserves other hierarchical properties (clip, inherited effects) that a shared element inherits from its ancestor. 
+By default, offered elements are captured in a flat hierarchy. As in all offered elements, including the root, will be laid out as siblings. The browser uses cached transforms to position each element so it overlaps exactly with its quad on the old page.
 
-This allows nested shared elements to continue to be positioned and clipped relative to their ancestor shared elements during a transition. This is proposed as a separate mode to minimize the scope for 'v1' of the feature. See [issue](https://github.com/WICG/shared-element-transitions/issues/74) for detailed discussion.
+The means that, during the transition, scaling one offered element won't impact the rendering of another offered element, even if it was a child of the other element in the old page.
+
+This also allows elements to visually move between containers in viewport space, even if they were clipped to some parent in old page.
+
+Alternatively, the developer can make an offered element a 'transition container'. Offered elements will be nested within their closest transition container, and the cached transform will position the element within that container rather than the viewport. This is similar in spirit to how `position: relative` creates a new 0,0 for absolutely positioned elements.
+
+'Transition containers' are out of scope for 'v1' of the feature. See [issue](https://github.com/WICG/shared-element-transitions/issues/74) for detailed discussion.
 
 ## Part 2: The preparation
 
@@ -107,7 +111,7 @@ At this point the state has changed over to Page-B, and Page-A is gone aside fro
 
 ### Setting the stage
 
-The offered elements from Page-A are fixed position at (0,0) and moved into their previous viewport-relative positions using the cached transform. Their content is painted on top of Page-B which ensures that the user continues to see Page-A's visuals as Page-B is loading. Note that this may not reproduce the exact rendering on Page-A. For example, the relative paint order of shared elements is preserved when rendered on top of Page-B. But if a shared element was occluded by another element, the latter is painted into the root's image unless it is also offered as a shared element.
+The stage is a viewport-filling container with fixed position. The offered elements from Page-A are positioned absolutely at (0,0), nested according in their closest 'transition container' or the stage if there's no parent container, and moved into their previous viewport-relative positions using the cached transform. Their content is painted on top of Page-B which ensures that the user continues to see Page-A's visuals as Page-B is loading. Note that this may not reproduce the exact rendering on Page-A. For example, the relative paint order of shared elements is preserved when rendered on top of Page-B. But if a shared element was occluded by another element, the latter is painted into the root's image unless it is also offered as a shared element.
 
 Page-B is hidden from rendering until the transition is complete.
 
@@ -117,13 +121,17 @@ The CSS images and computed properties/styles cached from Page-A are represented
 
 ```
 transition element
-└─ image wrapper
-   └─ image
+└─ states
+   └─ state
+      ├─ image
+      └─ …child transition elements…
 ```
 
 - **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element has a transform applied to position it in viewport space.
-- **image wrapper**: This element has a width and height of 100%, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
+- **states**: This element has a width and height of 100%, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
+- **state**: This element has a width and height of 100%. A transition element can have two states representing a "before" and "after" (documented later).
 - **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
+- **child transition elements**: If this transition element is a 'transition container', child transition elements will be nested here.
 
 These elements will be accessible to the developer via pseudo-elements.
 
@@ -133,16 +141,20 @@ These elements will be accessible to the developer via pseudo-elements.
 
 At this stage, Page-B identifies elements on its own page to be involved in the transition. This happens in the same way as the offering phase with one difference: The images and styles from Page-B will be updated if the underlying page updates. This means things like animated gifs will play, rather than being frozen on whatever frame they were on when they were captured.
 
-The developer can associate particular elements from Page-A to elements from Page-B. This would usually be done if they're equivalent. In this case, the headers, share buttons, and roots are equivalent. When this happens, the image from the Page-B element is added to the same image wrapper:
+The developer can associate particular elements from Page-A to elements from Page-B. This would usually be done if they're equivalent. In this case, the headers, share buttons, and roots are equivalent. When this happens, the state from the Page-B element is added to the same states wrapper:
 
 ```
 transition element
-└─ image wrapper
-   ├─ image (Page-A)
-   └─ image (Page-B)
+└─ states
+   ├─ state (Page-A)
+   │  ├─ image
+   │  └─ …child transition elements…
+   └─ state (Page-B)
+      ├─ image
+      └─ …child transition elements…
 ```
 
-This allows for the container to be moved as one, while cross-fading the Page-A and Page-B content. The developer will also have access to the state of shared elements (from Page-A and Page-B) replicated on the container. This state depends on the capture mode (single image vs computed styles + content image).
+This allows for the container to be moved as one, while cross-fading the Page-A and Page-B states. The developer will also have access to the style state of offered elements (from Page-A and Page-B) replicated on the container. This style state depends on the capture mode (single image vs computed styles + content image).
 
 Transition elements don't need to be associated with another transition elements, which allows for transitions involving elements that are only in Page-A or only in Page-B.
 
@@ -153,11 +165,12 @@ Note that the order in which the transition elements are painted can be configur
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/23): How should the default UA animation order these elements? And also handle a change in associated elements between the 2 pages.
 
 ### How are transition elements painted?
+
 During the transition a new stacking context (called uber-root) is created with the following hierarchy :
 
 ```
 uber-root stacking context
-└─ root stacking context
+├─ root stacking context
 └─ transition stacking context
 ```
 
