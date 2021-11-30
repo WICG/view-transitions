@@ -128,9 +128,9 @@ transition element
 ```
 
 - **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element has a transform applied to position it in viewport space.
-- **states**: This element has a width and height of 100%, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
-- **state**: This element has a width and height of 100%. A transition element can have two states representing a "before" and "after" (documented later).
-- **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
+- **states**: This element is absolutely positioned with an `inset` of 0, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
+- **state**: This element is absolutely positioned with an `inset` of 0. A transition element can have two states representing a "before" and "after" (documented later).
+- **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element is absolutely positioned at 0, 0 and has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
 - **child transition elements**: If this transition element is a 'transition container', child transition elements will be nested here.
 
 These elements will be accessible to the developer via pseudo-elements.
@@ -286,10 +286,12 @@ CSS can be used to build on default animations, or override the default.
 
 Element selectors:
 
-- `::page-transition-container(name)` - Select the transition containers of a given `page-transition-tag`.
-- `::page-transition-image-wrapper(page-transition-tag)` - Select the transition parts of a given `page-transition-tag`.
-- `::page-transition-image-outgoing(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
-- `::page-transition-image-incoming(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
+- `::page-transition(name)` - Select the 'transition element' of a given `page-transition-tag`.
+- `::page-transition-states(page-transition-tag)` - Select the 'states' element of a given `page-transition-tag`.
+- `::page-transition-outgoing-state(page-transition-tag)` - Select the outgoing 'state' element of a given `page-transition-tag`.
+- `::page-transition-incoming-state(page-transition-tag)` - Select the incoming 'state' element of a given `page-transition-tag`.
+- `::page-transition-outgoing-image(page-transition-tag)` - Select the outgoing 'image' element of a given `page-transition-tag`.
+- `::page-transition-incoming-image(page-transition-tag)` - Select the incoming 'image' element of a given `page-transition-tag`.
 - `::page-transition-root-outgoing` - Select the outgoing root image.
 - `::page-transition-root-incoming` - Select the incoming root image.
 - `::page-transition-root-container` - Useful for cases where something needs to be rendered underneath the root images.
