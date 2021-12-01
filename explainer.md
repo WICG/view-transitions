@@ -97,9 +97,9 @@ When an element is captured, its painting is 'lifted' from the parent offered el
 
 By default, offered elements are captured in a flat hierarchy. As in all offered elements, including the root, will be laid out as siblings. The browser uses cached transforms to position each element so it overlaps exactly with its quad on the old page.
 
-The means that, during the transition, scaling one offered element won't impact the rendering of another offered element, even if it was a child of the other element in the old page.
+The means that, during the transition, scaling one offered element won't impact the rendering of another offered element, even if it was a child of the other element in the old page. It also means that the child element will be drawn without the effects of its parent, eg `opacity`, `filter`, and clipping.
 
-This also allows elements to visually move between containers in viewport space, even if they were clipped to some parent in old page.
+This mode allows elements to visually move between containers in viewport space, even if they were clipped to some parent in old page.
 
 Alternatively, the developer can make an offered element a 'transition container'. Offered elements will be nested within their closest transition container, and the cached transform will position the element within that container rather than the viewport. This is similar in spirit to how `position: relative` creates a new 0,0 for absolutely positioned elements.
 
