@@ -123,15 +123,13 @@ The CSS images and computed properties/styles cached from Page-A are represented
 
 ```
 transition element
-└─ states
-   └─ state
-      ├─ image
-      └─ …child transition elements…
+├─ image wrapper
+│  └─ image
+└─ …child transition elements…
 ```
 
-- **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element has a transform applied to position it in viewport space.
-- **states**: This element is absolutely positioned with an `inset` of 0, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
-- **state**: This element is absolutely positioned with an `inset` of 0. A transition element can have two states representing a "before" and "after" (documented later).
+- **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element is absolutely positioned at 0, 0 and has a transform applied to position it in viewport space.
+- **image wrapper**: This element is absolutely positioned with an `inset` of 0, and has [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
 - **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element is absolutely positioned at 0, 0 and has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
 - **child transition elements**: If this transition element is a 'transition container', child transition elements will be nested here.
 
@@ -143,20 +141,17 @@ These elements will be accessible to the developer via pseudo-elements.
 
 At this stage, Page-B identifies elements on its own page to be involved in the transition. This happens in the same way as the offering phase with one difference: The images and styles from Page-B will be updated if the underlying page updates. This means things like animated gifs will play, rather than being frozen on whatever frame they were on when they were captured.
 
-The developer can associate particular elements from Page-A to elements from Page-B. This would usually be done if they're equivalent. In this case, the headers, share buttons, and roots are equivalent. When this happens, the state from the Page-B element is added to the same states wrapper:
+The developer can associate particular elements from Page-A to elements from Page-B. This would usually be done if they're equivalent. In this case, the headers, share buttons, and roots are equivalent. When this happens, the image from the Page-B element is added to the same image wrapper:
 
 ```
 transition element
-└─ states
-   ├─ state (Page-A)
-   │  ├─ image
-   │  └─ …child transition elements…
-   └─ state (Page-B)
-      ├─ image
-      └─ …child transition elements…
+├─ image wrapper
+│  ├─ image (Page-A)
+│  └─ image (Page-B)
+└─ …child transition elements…
 ```
 
-This allows for the container to be moved as one, while cross-fading the Page-A and Page-B states. The developer will also have access to the style state of offered elements (from Page-A and Page-B) replicated on the container. This style state depends on the capture mode (single image vs computed styles + content image).
+This allows for the container to be moved as one, while cross-fading the Page-A and Page-B content. The developer will also have access to the state of shared elements (from Page-A and Page-B) replicated on the container. This state depends on the capture mode (single image vs computed styles + content image).
 
 Transition elements don't need to be associated with another transition elements, which allows for transitions involving elements that are only in Page-A or only in Page-B.
 
@@ -288,12 +283,10 @@ CSS can be used to build on default animations, or override the default.
 
 Element selectors:
 
-- `::page-transition(name)` - Select the 'transition element' of a given `page-transition-tag`.
-- `::page-transition-states(page-transition-tag)` - Select the 'states' element of a given `page-transition-tag`.
-- `::page-transition-outgoing-state(page-transition-tag)` - Select the outgoing 'state' element of a given `page-transition-tag`.
-- `::page-transition-incoming-state(page-transition-tag)` - Select the incoming 'state' element of a given `page-transition-tag`.
-- `::page-transition-outgoing-image(page-transition-tag)` - Select the outgoing 'image' element of a given `page-transition-tag`.
-- `::page-transition-incoming-image(page-transition-tag)` - Select the incoming 'image' element of a given `page-transition-tag`.
+- `::page-transition-container(name)` - Select the transition containers of a given `page-transition-tag`.
+- `::page-transition-image-wrapper(page-transition-tag)` - Select the transition parts of a given `page-transition-tag`.
+- `::page-transition-outgoing-image(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
+- `::page-transition-incoming-image(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
 - `::page-transition-root-outgoing` - Select the outgoing root image.
 - `::page-transition-root-incoming` - Select the incoming root image.
 - `::page-transition-root-container` - Useful for cases where something needs to be rendered underneath the root images.
