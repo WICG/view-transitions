@@ -50,19 +50,19 @@ Aside from the root, an element offered for a transition has the following restr
 - [`contain: paint`](https://developer.mozilla.org/en-US/docs/Web/CSS/contain) which ensures that the element is the containing block for all positioned descendants and generates a stacking context. This implies that the child content will be clipped to the context-box but it can be expanded using ['overflow-clip-margin'](https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-clip-margin). Being a stacking context and a containing block allows the element to be treated as a single unit, whereas paint containment simplifies implementation.
 - [`break-inside: avoid`](https://developer.mozilla.org/en-US/docs/Web/CSS/break-inside) which disallows fragmentation ensuring the element content is a single rect, i.e., it doesn't break across lines or columns, again allowing the element to be treated as a single unit.
 
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/71): If the developer tries to break the above rules, what should happen? Is paint containment applied by the browser? Is that element dropped from the transition? Is the whole transition abandoned?
+The developer must add the properties above to an element's style if its offered for a transition. This constraint is verified during style resolution for all rendering lifecycle updates during a transition. If not satisfied, the transition is aborted. See [issue](https://github.com/WICG/shared-element-transitions/issues/71) for detailed discussion.
 
 When a developer offers elements for a transition, there are two modes they can choose from:
 
 ### As a single image
 
-The entire painting of the element is captured, including things which appear outside of its bounding box such as shadows and blurs, as a single CSS image. The resulting dimensions, transform, and viewport position is also captured so the image can be correctly positioned later.
+The entire painting of the element is captured, including things which appear outside of its bounding box such as shadows and blurs, as a single CSS image.
 
 https://user-images.githubusercontent.com/93594/141118353-d62d19a1-0964-4fa0-880f-bdde656ce899.mp4
 
 The element is captured without the effects (such as opacity and filters) from parent elements. Effects on the element itself are baked into the image. However, the element is captured without transforms, as those transforms are reapplied later.
 
-Capturing an element in this way isn't a new concept to the platform, as it's similar many ways to [`element()`](https://developer.mozilla.org/en-US/docs/Web/CSS/element()) in CSS, although there are some subtle differences documented later.
+Capturing an element in this way isn't a new concept to the platform, as [`element()`](<https://developer.mozilla.org/en-US/docs/Web/CSS/element()>) in CSS performs a similar action. The differences are documented later.
 
 The root is always captured as a single image, with the other transition elements removed (similar to how compositing works today), and is also clipped to the viewport, as capturing the entire page would take an enormous amount of memory in many cases.
 
@@ -89,11 +89,23 @@ The second mode where styles are copied to a container element won't be part of 
 
 ### Nested transition elements
 
-In the example transition, the content of the header cross-fades from Page-A to Page-B. An even smoother transition could be achieved by also animating the site title and avatar 'chip' independently. However, 'v1' of this proposal disallows a shared element to be nested inside another shared element.
+In the example transition, the content of the header cross-fades from Page-A to Page-B. An even smoother transition could be achieved by also animating the site title and avatar 'chip' independently. To allow for this, an offered element can contain other offered elements.
 
-The restriction avoids the need to preserve the hierarchy of shared elements and associated properties (transform, clip, effects inherited by descendants) in the DOM representation created to render the images referenced above. This helps in minimizing the scope for 'v1' of the feature.
+When an element is captured, its painting is 'lifted' from the parent offered element, which may be the root. This is similar to how browsers handle composited elements.
 
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/74): If the developer tries to do this, what should happen, and when is that verified? Is the nested offering ignored? Is the whole transition abandoned?
+### Retaining hierarchy during a transition
+
+By default, offered elements are captured in a flat hierarchy. As in all offered elements, including the root, will be laid out as siblings. The browser uses cached transforms to position each element so it overlaps exactly with its quad on the old page.
+
+The means that, during the transition, scaling one offered element won't impact the rendering of another offered element, even if it was a child of the other element in the old page.
+
+This mode allows elements to visually move between containers in viewport space, even if they were clipped to some parent in old page.
+
+Alternatively, the developer can make an offered element a 'transition container'. Offered elements will be nested within their closest transition container, and the cached transform will position the element within that container rather than the viewport. This is similar in spirit to how `position: relative` becomes the containing block for absolutely positioned elements.
+
+If 'transition containers' are used in combination with "element's computed style + content image", then effects on the parent such as `opacity`, `filter`, `mix-blend-mode` will also carry through to the children. Whereas in the flattened model, and "single image" model, effects on the parent no longer apply to the children.
+
+'Transition containers' are out of scope for 'v1' of the feature. See [issue](https://github.com/WICG/shared-element-transitions/issues/74) for detailed discussion.
 
 ## Part 2: The preparation
 
@@ -101,9 +113,7 @@ At this point the state has changed over to Page-B, and Page-A is gone aside fro
 
 ### Setting the stage
 
-The offered elements from Page-A are fixed position at (0,0) in the [top layer](https://fullscreen.spec.whatwg.org/#top-layer), and moved into their previous viewport-relative positions using the cached transform.
-
-The top layer content ensures that the user continues to see Page-A's visuals as Page-B is loading. Note that this may not reproduce the exact rendering on Page-A. For example, the relative paint order of shared elements is preserved in the top layer. But if a shared element was occluded by another element, the latter is painted into the root's image unless it is also offered as a shared element.
+The captured elements are displayed using a tree of pseudo-elements. The root of this tree is a viewport-filling container with fixed position. The offered elements from Page-A are positioned absolutely at (0,0), nested according to their closest 'transition container' or the root if there's no parent container, and moved into their previous viewport-relative (or transition container relative) positions using the cached transform. Their content is painted on top of Page-B which ensures that the user continues to see Page-A's visuals as Page-B is loading. Note that this may not reproduce the exact rendering on Page-A. For example, the relative paint order of shared elements is preserved in this tree rendered on top of Page-B. But if a shared element was occluded by another element, the latter is painted into the root's image unless it is also offered as a shared element.
 
 Page-B is hidden from rendering until the transition is complete.
 
@@ -112,19 +122,23 @@ Page-B is hidden from rendering until the transition is complete.
 The CSS images and computed properties/styles cached from Page-A are represented as elements with the following nesting:
 
 ```
-transition element
-└─ image wrapper
-   └─ image
+transition root
+├─ transition element
+│  ├─ image wrapper
+│  │  └─ image
+│  └─ …child transition elements…
+└─ …other transition elements…
 ```
 
-- **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element has a transform applied to position it in viewport space.
-- **image wrapper**: This element has a width and height of 100%, and [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
-- **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
+- **transition root**: The fixed position container which is the root of the pseudo element tree. This element has a width/height of the viewport.
+- **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element is absolutely positioned at 0, 0 and has a transform applied to position it in viewport space.
+- **image wrapper**: This element is absolutely positioned with an `inset` of 0, and has [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
+- **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element is absolutely positioned at 0, 0 and has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
+- **child transition elements**: If this transition element is a 'transition container', child transition elements will be nested here.
 
-These elements will be addressable via pseudo-elements, although they may be exposed as full elements via a JS API.
+These elements will be accessible to the developer via pseudo-elements.
 
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/75): How does the UA apply styles to these elements? Particularly styles which are specific to one transition element, such as its transform. Inline styles are simple, but tricky for a developer to override in a stylesheet. An alternative would be to generate a `<style>` and put it, and the transition elements, in a shadow root along with the transition elements.
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/76): If these elements live within the top layer, how do they interact with other things which use the top layer, such as fullscreen and `<dialog>`?
 
 ### Mixing in elements from Page-B and associating them with transition elements from Page-A
 
@@ -134,9 +148,10 @@ The developer can associate particular elements from Page-A to elements from Pag
 
 ```
 transition element
-└─ image wrapper
-   ├─ image (Page-A)
-   └─ image (Page-B)
+├─ image wrapper
+│  ├─ image (Page-A)
+│  └─ image (Page-B)
+└─ …child transition elements…
 ```
 
 This allows for the container to be moved as one, while cross-fading the Page-A and Page-B content. The developer will also have access to the state of shared elements (from Page-A and Page-B) replicated on the container. This state depends on the capture mode (single image vs computed styles + content image).
@@ -147,7 +162,19 @@ The root elements of each page are automatically associated.
 
 Note that the order in which the transition elements are painted can be configured by UA and/or developer stylesheets using z-index.
 
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/23): How should the default UA animation order these elements? And also handle a change in associated elements between the 2 pages. 
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/23): How should the default UA animation order these elements? And also handle a change in associated elements between the 2 pages.
+
+### How are transition elements painted?
+
+During the transition a new stacking context (called uber-root) is created with the following hierarchy :
+
+```
+uber-root stacking context
+├─ root stacking context
+└─ transition stacking context
+```
+
+This allows using the output of the root stacking context to provide a live root image for Page-B. The transition stacking context maps to the transition-root element. An alternate approach to this was to paint the transition-root in the [top layer](https://fullscreen.spec.whatwg.org/#top-layer). But that made it difficult to support transitions when there is other content in the top layer (fullscreen elements, dialog) and to ensure effects on the root element which are applied to the root stacking context (background-color, filter) are captured in the root image. See [issue](https://github.com/WICG/shared-element-transitions/issues/74) for detailed discussion.
 
 ## Part 3: The transition
 
@@ -261,13 +288,13 @@ Element selectors:
 
 - `::page-transition-container(name)` - Select the transition containers of a given `page-transition-tag`.
 - `::page-transition-image-wrapper(page-transition-tag)` - Select the transition parts of a given `page-transition-tag`.
-- `::page-transition-image-outgoing(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
-- `::page-transition-image-incoming(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
+- `::page-transition-outgoing-image(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
+- `::page-transition-incoming-image(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
 - `::page-transition-root-outgoing` - Select the outgoing root image.
 - `::page-transition-root-incoming` - Select the incoming root image.
 - `::page-transition-root-container` - Useful for cases where something needs to be rendered underneath the root images.
 
-These will be selecting elements in a UA-created shadow DOM.
+These will be selecting UA generated pseudo-elements.
 
 ```css
 ::page-transition-container(header) {
@@ -279,21 +306,19 @@ CSS can be used to make changes to the default animation, or override `animation
 
 ### JavaScript access to elements
 
-So far the transition elements have been addressed by pseudo-element selectors, but JavaScript could be given access to the elements. This would be done via a shadow root.
-
-This isn't unusual, as developer currently use things like [`::placeholder`](https://developer.mozilla.org/en-US/docs/Web/CSS/::placeholder) to address things in a UA shadow root within `<input>`. We can't expose the shadow root within `<input>`, because the structure is non-standard, however, for transitions, the structure will be standardized, so it can be exposed.
+So far the transition elements have been addressed by pseudo-element selectors, but JavaScript could be given access to the elements using the [CSSPseudoElement](https://drafts.csswg.org/css-pseudo-4/#CSSPseudoElement-interface) interface.
 
 ```js
 // In Page-B
 document.performTransition((transition) => {
   // Build up transition parts, then…
-  transition.root.querySelector('[part=header]').animate(…);
+  document.documentElement.pseudo("page-transition-container(name)").animate(...);
 });
 ```
 
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/86) What's the deadline for calling `performTransition`?
 
-If the 'stage' of the transition is exposed as a shadow root like this, the developer can interact with the elements in a regular way. The developer could even create elements specifically for the transition.
+Note that using pseudo-elements here implies that the developer can not change the DOM structure of transition elements. An alternate approach considered to provide this extensibility uses shadow DOM. The pseudo-element option was preferred to make it easier to build on concepts which already exist in the platform and ensure ease of implementation. See [issue](https://github.com/WICG/shared-element-transitions/issues/93) for detailed discussion.
 
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/87): Is the freedom above a feature or a bug?
 
