@@ -101,7 +101,7 @@ The means that, during the transition, scaling one offered element won't impact 
 
 This mode allows elements to visually move between containers in viewport space, even if they were clipped to some parent in old page.
 
-Alternatively, the developer can make an offered element a 'transition container'. Offered elements will be nested within their closest transition container, and the cached transform will position the element within that container rather than the viewport. This is similar in spirit to how `position: relative` creates a new 0,0 for absolutely positioned elements.
+Alternatively, the developer can make an offered element a 'transition container'. Offered elements will be nested within their closest transition container, and the cached transform will position the element within that container rather than the viewport. This is similar in spirit to how `position: relative` becomes the containing block for absolutely positioned elements.
 
 If 'transition containers' are used in combination with "element's computed style + content image", then effects on the parent such as `opacity`, `filter`, `mix-blend-mode` will also carry through to the children. Whereas in the flattened model, and "single image" model, effects on the parent no longer apply to the children.
 
