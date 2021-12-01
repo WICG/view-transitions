@@ -171,7 +171,7 @@ uber-root stacking context
 └─ transition stacking context
 ```
 
-This allows using the output of the root stacking context to provide a live root image for Page-B. The transition elements are painted into the transition stacking context. An alternate approach to this was to paint the transition elements in the [top layer](https://fullscreen.spec.whatwg.org/#top-layer). But that made it difficult to support transitions when there is other content in the top layer (fullscreen elements, dialog) and to ensure effects on the root element which are applied to the root stacking context (background-color, filter) are captured in the root image. See [issue](https://github.com/WICG/shared-element-transitions/issues/74) for detailed discussion.
+This allows using the output of the root stacking context to provide a live root image for Page-B. The transition stacking context maps to the transition-root element. An alternate approach to this was to paint the transition-root in the [top layer](https://fullscreen.spec.whatwg.org/#top-layer). But that made it difficult to support transitions when there is other content in the top layer (fullscreen elements, dialog) and to ensure effects on the root element which are applied to the root stacking context (background-color, filter) are captured in the root image. See [issue](https://github.com/WICG/shared-element-transitions/issues/74) for detailed discussion.
 
 ## Part 3: The transition
 
