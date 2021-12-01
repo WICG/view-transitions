@@ -122,12 +122,14 @@ Page-B is hidden from rendering until the transition is complete.
 The CSS images and computed properties/styles cached from Page-A are represented as elements with the following nesting:
 
 ```
-transition element
-├─ image wrapper
-│  └─ image
-└─ …child transition elements…
+transition root
+|_transition element
+  ├─ image wrapper
+  │  └─ image
+  └─ …child transition elements…
 ```
 
+- **transition root**: The  fixed position container which is the root of the pseudo element tree. This element has a width/height of the viewport.
 - **transition element**: If the element is created as a "computed style + content image", this element will have a width and height of the content box of the original element, and have its computed styles reapplied. If the part is created as a "single image", this element will have a width and height of the border box of the original element. In either case, this element is absolutely positioned at 0, 0 and has a transform applied to position it in viewport space.
 - **image wrapper**: This element is absolutely positioned with an `inset` of 0, and has [`isolation: isolate`](https://developer.mozilla.org/en-US/docs/Web/CSS/isolation). This wrapper is useful when cross-fading images (documented later).
 - **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element is absolutely positioned at 0, 0 and has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
