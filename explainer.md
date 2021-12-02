@@ -230,7 +230,6 @@ Expanding on the capabilities of the CSS properties, a JS API allows the develop
 
 Also, data can be provided via `setData`. This can be anything structured-clonable, and will be made available to Page-B.
 
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/77): Is this a tight-coupling with app-history, or could it be usable without it?
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/78): Do we need `offerElement`? The same thing could be done by adding the CSS properties.
 
 ```js
