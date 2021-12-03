@@ -185,11 +185,11 @@ When the transition is complete, the transition elements created by the UA are r
 
 ## Page-A
 
-Page-A must offer elements to use for a transition to happen.
+Page-A must offer elements to use for a transition, otherwise no transition will happen.
 
 ### Via CSS
 
-Page-A can offer an element to be used in a transition via CSS, using the `page-transition` property:
+Page-A can offer an element to be used in a transition via CSS, using the `page-transition-tag` property:
 
 ```css
 :root {
@@ -218,17 +218,17 @@ document.addEventListener("pagehide", (event) => {
 });
 ```
 
-The [`pagehide`](https://developer.mozilla.org/en-US/docs/Web/API/Window/pagehide_event) event is an existing event which fires during the onload of a document. The event type is currently [`PageTransitionEvent`](https://html.spec.whatwg.org/multipage/indices.html#events-2:pagetransitionevent). This proposal will change that to `PageHideTransitionEvent`, which extends `PageTransitionEvent`, and adds the following:
+The [`pagehide`](https://developer.mozilla.org/en-US/docs/Web/API/Window/pagehide_event) event is an existing event which fires during the unload of a document. The event type is currently [`PageTransitionEvent`](https://html.spec.whatwg.org/multipage/indices.html#events-2:pagetransitionevent). This proposal will change that to `PageHideTransitionEvent`, which extends `PageTransitionEvent`, and adds the following:
 
 - `event.nextURL` - The URL of the next page. Is `null` if cross-origin, or if there's no next page for this window.
-- `event.transition` - Null if a transition cannot be performed. The following needs to be true for transitions to be performed:
+- `event.transition` - `null` if a transition cannot be performed. The following needs to be true for transitions to be performed:
   - The browser supports page transitions.
   - This document is navigating to another (`pagehide` also fires if the iframe/tab is being removed).
   - The next page is same-origin, although cross-origin may be supported in future.
   - The window is top-level, although nested page transitions may be supported in future.
 - `event.transition.setElement(element, tag, options)` - Set an element to be used in the transition.
   - `element` - the element.
-  - `tag` - the tag name. Can be null to un-set this element.
+  - `tag` - the tag name. Can be z to un-set this element.
   - `options` - reserved for future use. This is where "computed style + content image" and "retaining hierarchy" modes will be exposed.
 - `event.transition.setData(data)` - An object that is structured-cloned and passed to the next page.
 - `event.transition.ignoreCSSTaggedElements()`
@@ -238,10 +238,10 @@ Methods on `event.transition` must be called during the dispatch of the `pagehid
 Once `pagehide` has dispatched:
 
 1. If `ignoreCSSTaggedElements` was not called, gather elements offered via `page-transition-tag`.
-1. Add/remove offered elements according to `offerForTransition` calls.
+1. Add/remove offered elements according to `setElement` calls.
 1. If at least one element remains offered, a transition can go ahead.
 
-As a result of the above, if an element is offered via CSS and `offerForTransition`, then `offerForTransition` wins. If there are multiple calls to `offerForTransition` for the same element, the last wins.
+As a result of the above, if an element is offered via CSS and `setElement`, then `setElement` wins. If there are multiple calls to `setElement` for the same element, the last wins.
 
 Gathering offered elements _after_ the dispatch of `pagehide` means the developer can use a mix of the CSS and JS methods. For instance, the developer could set a class on the root element depending on `event.nextUrl`, which changes the offered elements.
 
@@ -324,7 +324,7 @@ The animation is considered complete once all animations on all the pseudo-eleme
 The JavaScript API extends on the capabilities of the CSS API.
 
 ```js
-document.addEventListener("pageimmediateshow", async (event) => {
+document.addEventListener("beforepageshow", async (event) => {
   if (!event.transition) return;
   event.transition.setElement(document.documentElement, "root");
   event.transition.setElement(document.querySelector(".header"), "header");
@@ -339,11 +339,11 @@ document.addEventListener("pageimmediateshow", async (event) => {
 });
 ```
 
-`pageimmediateshow` is a new event which fires just before the page is shown. Unfortunately `pageshow` fires a long after the page is shown, after `window.onload`. The developer will have to add a listener to this somewhere that's executed before the page is shown.
+`beforepageshow` is a new event which fires just before the page is shown. Unfortunately `pageshow` fires a long after the page is shown, after `window.onload`. The developer will have to add a listener to this somewhere that's executed before the page is shown.
 
 - `event.previousURL` - URL of the previous page. Is `null` if cross-origin, or if there was no previous page.
 - `event.direction` - `forward` if moving forward in history, `back` is moving back in history, `new` otherwise.
-- `event.transition` - Null if Page-A did not offer any elements.
+- `event.transition` - `null` if Page-A did not offer any elements.
 - `event.transition.data` - Data set by Page-A via `setData`.
 - `event.transition.abandon()` - Abandon the transition.
 - `event.transition.setElement(element, tag, options)` - Same API as in Page-A.
