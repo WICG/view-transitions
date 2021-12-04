@@ -228,7 +228,7 @@ The [`pagehide`](https://developer.mozilla.org/en-US/docs/Web/API/Window/pagehid
   - The window is top-level, although nested page transitions may be supported in future.
 - `event.transition.setElement(element, tag, options)` - Set an element to be used in the transition.
   - `element` - the element.
-  - `tag` - the tag name. Can be z to un-set this element.
+  - `tag` - the tag name. Can be `null` to un-set this element.
   - `options` - reserved for future use. This is where "computed style + content image" and "retaining hierarchy" modes will be exposed.
 - `event.transition.setData(data)` - An object that is structured-cloned and passed to the next page.
 - `event.transition.ignoreCSSTaggedElements()`
