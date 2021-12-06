@@ -136,7 +136,7 @@ transition root
 - **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element is absolutely positioned at 0, 0 and has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
 - **child transition elements**: If this transition element is a 'transition container', child transition elements will be nested here.
 
-These elements will be accessible to the developer via pseudo-elements. The default animations specified by the UA are set up using a dynamic UA stylesheet. This allows developers to customize the transition by overriding the default styles with developer provided CSS.
+These elements will be accessible to the developer via pseudo-elements. The default animations specified by the user agent are set up using a dynamic user agent stylesheet. This allows developers to customize the transition by overriding the default styles with developer provided CSS.
 
 ### Mixing in elements from Page-B and associating them with transition elements from Page-A
 
