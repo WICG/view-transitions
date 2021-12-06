@@ -69,7 +69,7 @@ Capturing as a CSS image avoids the interactivity risks, complexities, and memor
 #### Image Size
 The size of the image cached for an element is equal to the element's [ink overflow rectangle](https://drafts.csswg.org/css-overflow-3/#ink-overflow-rectangle). This allows exposing parts of an element during the transition which may have been hidden earlier. The user-agent is allowed to clip the image to an implementation defined size (a common case would be the max texture size supported by the device). When caching a subset of the element due to this constraint, the area within the element cached by the user-agent is the area closest to the viewport.
 
-The size of the root image and the area captured follows a pattern similar to shared elements. However, since the root image is generated using the root stacking context it is likely to exceed and be clipped to capped size in most cases.
+The size of the root image and the area captured follows a pattern similar to shared elements. However, since the root image is generated using the root stacking context it is likely to be clipped to an implementation defined size in most cases.
 
 An alternate choice was to clip the element to viewport bounds to limit memory use, particularly for the root element. This can be added as a perfomance hint from the developer in future iterations. See issues [72](https://github.com/WICG/shared-element-transitions/issues/72) and [73](https://github.com/WICG/shared-element-transitions/issues/73) for detailed discussion on this topic.
 
