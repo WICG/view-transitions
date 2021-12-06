@@ -262,8 +262,7 @@ The potential default animations setup for the different cases are as follows. N
 - If an element exists in Page-B only (entry animation), a fade animation takes its container from opacity 0 to 1.
 - If an element exists in both Page-A and Page-B, and both are 'container and content', an animation takes the container from Page-A styles to Page-B styles (which will include the transform used for positioning), while cross-fading the two images.
 - If an element exists in both Page-A and Page-B, and neither are 'container and child', a transform animation takes its container from Page-A size/transform to Page-B size/transform, while cross-fading the two images.
-
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/82): What if the Page-A element is 'container and child' but the Page-B element is 'single image'?
+- If an element exists in both Page-A and Page-B and only one of them is 'container and content', both are forced to use 'single image' mode and use the default animation described above. See [issue](https://github.com/WICG/shared-element-transitions/issues/82) for detailed discussion.
 
 Because the images are sized to 100% of the container, the images will also change size throughout the transition. How these are scaled can be changed using regular CSS features like `object-fit`.
 
