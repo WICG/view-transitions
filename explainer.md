@@ -186,7 +186,7 @@ https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b
 
 ## Part 4: The end
 
-When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B.
+When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B. The transition completes once no pseudo element has an active animation.
 
 # The MPA API
 
