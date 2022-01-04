@@ -142,7 +142,7 @@ transition root
 
 These elements will be accessible to the developer via pseudo-elements. The default animations specified by the user agent are set up using a dynamic user agent stylesheet. This allows developers to customize the transition by overriding the default styles with developer provided CSS.
 
-The pseudo-elements are generated at the offering phase for captured elements from Page-A. At this point, only a single image element is generated for snapshots from Page-A. Image elements for Page-B are generated later as specified below.
+The pseudo-elements are generated at the offering phase for captured elements from Page-A. At this point, only a single image element is generated for snapshots from Page-A. Image elements for Page-B are generated later as specified below. These pseudo-elements are exposed to developer CSS after elements from Page-B have been added to the pseudo-element tree.
 
 ### Mixing in elements from Page-B and associating them with transition elements from Page-A
 
