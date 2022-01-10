@@ -186,6 +186,8 @@ Everything is now in place to perform the transition. The developer can animate 
 
 https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
+Note that the browser defers displaying elements from Page-B and starting the animation until Page-B is ready for first render. This is currently driven by internal browser heuristics and is being standardized in the proposal [here](https://github.com/whatwg/html/issues/7131).
+
 ## Part 4: The end
 
 When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B.
@@ -272,7 +274,6 @@ Because the images are sized to 100% of the container, the images will also chan
 
 In all cases, the duration and easing is some undecided default, that could even be platform independent.
 
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/83): When will the default animation start? When the browser would usually first render Page-B?
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/84): Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/85): If the developer wants a default animation of the root only, how do they define that?
 
