@@ -2,7 +2,9 @@
 
 https://user-images.githubusercontent.com/93594/140955654-fa944c4d-530e-4d3c-8286-50864d59bb0d.mp4
 
-When a user navigates on the web, the viewport abruptly switches from Page-A to Page-B, often in some in-progress state. This can include a flash of white, and elements which seem to disappear only to reappear in the same place. This sequenced user experience results in a higher cognitive load because the user has to connect the dots between where they were, and where they are. In addition, it increases the user's perception of loading time as compared with a smooth loading animation. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
+When a user navigates on the web from Page-A to Page-B, the viewport jumps and there is a flash of white as elements disappear only to reappear in the same place in some in-progress state. This sequenced, disconnected user experience is disorienting and results in a higher-cognitive load as the user is forced to piece together how they got to where they came from. Additionally, this jarring experience increases how much users perceive the page loading as they stare at the white limbo state.
+
+Smooth loading animations can lower the cognitive load by helping users [stay in context](https://www.smashingmagazine.com/2013/10/smart-transitions-in-user-experience-design/) as they navigate from Page-A to Page-B, and [reduce the perceived latency](https://wp-rocket.me/blog/perceived-performance-need-optimize/#:~:text=1.%20Use%20activity%20and%20progress%20indicators) of loading by providing them with something engaging and delightful in the meantime.  For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
 
 https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
@@ -50,7 +52,7 @@ An element offered for a transition has the following restrictions:
 - [`contain: paint`](https://developer.mozilla.org/en-US/docs/Web/CSS/contain) which ensures that the element is the containing block for all positioned descendants and generates a stacking context. This implies that the child content will be clipped to the context-box but it can be expanded using ['overflow-clip-margin'](https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-clip-margin). Being a stacking context and a containing block allows the element to be treated as a single unit, whereas paint containment simplifies implementation.
 - [`break-inside: avoid`](https://developer.mozilla.org/en-US/docs/Web/CSS/break-inside) which disallows fragmentation ensuring the element content is a single rect, i.e., it doesn't break across lines or columns, again allowing the element to be treated as a single unit.
 
-The developer must add the properties above to an element's style if its offered for a transition. This constraint is verified during style resolution for all rendering lifecycle updates during a transition. If not satisfied, the transition is aborted. See [issue](https://github.com/WICG/shared-element-transitions/issues/71) for detailed discussion.
+These constraints are implicitly applied to the element's rendering by the UA. See [issue](https://github.com/WICG/shared-element-transitions/issues/71) for detailed discussion.
 
 When a developer offers elements for a transition, there are two modes they can choose from:
 
@@ -60,15 +62,20 @@ The painting of the element is captured, including things which appear outside o
 
 https://user-images.githubusercontent.com/93594/141118353-d62d19a1-0964-4fa0-880f-bdde656ce899.mp4
 
-The element is captured without the effects (such as opacity and filters) from parent elements. Effects on the element itself are baked into the image. However, the element is captured without transforms, as those transforms are reapplied later.
+The element is captured without the effects (such as opacity and filters) from parent elements. Effects on the element itself are baked into the image. However, the element is captured without transforms, as those transforms are reapplied later. The root is always captured as a single image, with the other transition elements removed (similar to how compositing works today).
 
 Capturing an element in this way isn't a new concept to the platform, as [`element()`](<https://developer.mozilla.org/en-US/docs/Web/CSS/element()>) in CSS performs a similar action. The differences are documented later.
 
-If the whole element cannot be captured for memory reasons, then a reasonable amount is captured. The area captured will give priority to the area in and around the viewport. This is particularly important for the root, which can be enormous, but only the in-viewport area is needed for the transition.
-
 Capturing as a CSS image avoids the interactivity risks, complexities, and memory impact of fully preserving these parts of Page-A as live DOM. On the other hand, it means that the capture will be 'static'. If it includes things like gifs, video, or other animating content, they'll be frozen on the frame they were displaying when captured.
 
-This mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently and doesn't stretch. There's another mode for that:
+#### Image Size
+The size of the image cached for an element is equal to the element's [ink overflow rectangle](https://drafts.csswg.org/css-overflow-3/#ink-overflow-rectangle). This allows exposing parts of an element during the transition which may have been hidden earlier. The user-agent is allowed to clip the image to an implementation defined size (a common case would be the max texture size supported by the device). When caching a subset of the element due to this constraint, the area within the element cached by the user-agent is the area closest to the viewport.
+
+The size of the root image and the area captured follows a pattern similar to shared elements. However, since the root image is generated using the root stacking context it is likely to be clipped to an implementation defined size in most cases.
+
+An alternate choice was to clip the element to viewport bounds to limit memory use, particularly for the root element. This can be added as a perfomance hint from the developer in future iterations. See issues [72](https://github.com/WICG/shared-element-transitions/issues/72) and [73](https://github.com/WICG/shared-element-transitions/issues/73) for detailed discussion on this topic.
+
+The single image mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently and doesn't stretch. There's another mode for that:
 
 ### As the element's computed style + content image
 
@@ -137,9 +144,9 @@ transition root
 - **image**: This contains the cached image, which may paint outside the parent elements. This would be a replaced element so CSS properties like `object-fit` will be supported. This element is absolutely positioned at 0, 0 and has a width and height of 100%, although the image may paint outside of its own bounds, similar to how a `box-shadow` is painted outside of an element's bounds.
 - **child transition elements**: If this transition element is a 'transition container', child transition elements will be nested here.
 
-These elements will be accessible to the developer via pseudo-elements.
+These elements will be accessible to the developer via pseudo-elements. The default animations specified by the user agent are set up using a dynamic user agent stylesheet. This allows developers to customize the transition by overriding the default styles with developer provided CSS.
 
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/75): How does the UA apply styles to these elements? Particularly styles which are specific to one transition element, such as its transform. Inline styles are simple, but tricky for a developer to override in a stylesheet. An alternative would be to generate a `<style>` and put it, and the transition elements, in a shadow root along with the transition elements.
+The pseudo-elements are generated at the offering phase for captured elements from Page-A. At this point, only a single image element is generated for snapshots from Page-A. Image elements for Page-B are generated later as specified below. These pseudo-elements are exposed to developer CSS after elements from Page-B have been added to the pseudo-element tree.
 
 ### Mixing in elements from Page-B and associating them with transition elements from Page-A
 
@@ -181,23 +188,169 @@ Everything is now in place to perform the transition. The developer can animate 
 
 https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
+Note that the browser defers displaying elements from Page-B and starting the animation until Page-B is ready for first render. This is currently driven by internal browser heuristics and is being standardized in the proposal [here](https://github.com/whatwg/html/issues/7131).
+
 ## Part 4: The end
 
 When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B.
 
-# The cross-document transition API
+# The MPA API
 
-## Page-A
+There are a lot of open questions around the API, but this section will give a flavor of the direction.
 
-Page-A must offer elements to use for a transition, otherwise no transition will happen.
+Little thought has been giving to naming in these APIs, which will be improved when there's stronger consensus around the concepts.
 
-### Via CSS
+## Creating a transition element
 
-Page-A can offer an element to be used in a transition via CSS, using the `page-transition-tag` property:
+### CSS properties
 
 ```css
-:root {
-  page-transition-tag: root;
+.header {
+  page-transition-tag: header;
+  page-transition-capture: container-and-child;
+}
+```
+
+Setting a `page-transition-tag` marks this element as a transition element, and the `page-transition-capture` property is used to indicate how it's captured (as a single image vs as a computed style + content image).
+
+Multiple elements could have the same `page-transition-tag` value, which is useful for aggregate content such as user comments.
+
+Elements on Page-A and Page-B which have the same `page-transition-tag` are automatically associated with each other. If multiple elements have the same value, they're associated in DOM order.
+
+Using CSS properties means values can change depending on viewport (`@media`) and browser support (`@supports`).
+
+### JS API
+
+```js
+// In Page-A
+addEventListener('navigate', (event) => {
+  event.prepareSameOriginPageTransition((transition) => {
+    transition.offerElement('header', document.querySelector('.header'), {
+      capture: 'container-and-child',
+    });
+
+    transition.setData({…});
+  });
+});
+```
+
+Expanding on the capabilities of the CSS properties, a JS API allows the developer to change which parts are offered depending on the destination of the navigation, and the direction of navigation (back vs forward). This builds on top of the [app-history API](https://github.com/WICG/app-history).
+
+Also, data can be provided via `setData`. This can be anything structured-clonable, and will be made available to Page-B.
+
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/78): Do we need `offerElement`? The same thing could be done by adding the CSS properties.
+
+```js
+// In Page-B
+document.performTransition((transition) => {
+  console.log(transition.data);
+  const pageAHeader = transition.offeredElements.get('header');
+  const pageBHeader = transition.createTransitionElement(document.querySelector('.header'), {
+    capture: 'container-and-child',
+  });
+  transition.matchElements(pageAHeader, pageBHeader);
+});
+```
+
+This sketch is particularly half-baked. A more concrete proposal will be possible when more of the concepts are decided.
+
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/79): Do we need `createTransitionElement`? It could be done via adding CSS properties, but it might be clumsy if the developer is going to immediately remove the properties afterwards.
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/80): How does the outgoing page offer just the root for transition?
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/81): When is the `performTransition` callback called?
+
+## Defining the animation
+
+How will Page-B define the animation?
+
+### Default animation
+
+The potential default animations setup for the different cases are as follows. Note all of these can be overridden by the developer:
+
+- If an element exists in Page-A only (exit animation), a fade animation takes its container from opacity 1 to 0.
+- If an element exists in Page-B only (entry animation), a fade animation takes its container from opacity 0 to 1.
+- If an element exists in both Page-A and Page-B, and both are 'container and content', an animation takes the container from Page-A styles to Page-B styles (which will include the transform used for positioning), while cross-fading the two images.
+- If an element exists in both Page-A and Page-B, and neither are 'container and child', a transform animation takes its container from Page-A size/transform to Page-B size/transform, while cross-fading the two images.
+- If an element exists in both Page-A and Page-B and only one of them is 'container and content', both are forced to use 'single image' mode and use the default animation described above. See [issue](https://github.com/WICG/shared-element-transitions/issues/82) for detailed discussion.
+
+Because the images are sized to 100% of the container, the images will also change size throughout the transition. How these are scaled can be changed using regular CSS features like `object-fit`.
+
+In all cases, the duration and easing is some undecided default, that could even be platform independent.
+
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/84): Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/85): If the developer wants a default animation of the root only, how do they define that?
+
+### CSS animation
+
+CSS can be used to build on default animations, or override the default.
+
+```css
+::page-transition-container(header) {
+  /* … */
+}
+```
+
+Element selectors:
+
+- `::page-transition-container(name)` - Select the transition containers of a given `page-transition-tag`.
+- `::page-transition-image-wrapper(page-transition-tag)` - Select the transition parts of a given `page-transition-tag`.
+- `::page-transition-outgoing-image(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
+- `::page-transition-incoming-image(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
+- `::page-transition-root-outgoing` - Select the outgoing root image.
+- `::page-transition-root-incoming` - Select the incoming root image.
+- `::page-transition-root-container` - Useful for cases where something needs to be rendered underneath the root images.
+
+These will be selecting UA generated pseudo-elements.
+
+```css
+::page-transition-container(header) {
+  animation-delay: 300ms;
+}
+```
+
+CSS can be used to make changes to the default animation, or override `animation-name` to remove the default.
+
+### JavaScript access to elements
+
+So far the transition elements have been addressed by pseudo-element selectors, but JavaScript could be given access to the elements using the [CSSPseudoElement](https://drafts.csswg.org/css-pseudo-4/#CSSPseudoElement-interface) interface.
+
+```js
+// In Page-B
+document.performTransition((transition) => {
+  // Build up transition parts, then…
+  document.documentElement.pseudo("page-transition-container(name)").animate(...);
+});
+```
+
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/86) What's the deadline for calling `performTransition`?
+
+Note that using pseudo-elements here implies that the developer can not change the DOM structure of transition elements. An alternate approach considered to provide this extensibility uses shadow DOM. The pseudo-element option was preferred to make it easier to build on concepts which already exist in the platform and ensure ease of implementation. See [issue](https://github.com/WICG/shared-element-transitions/issues/93) for detailed discussion.
+
+- [Open question](https://github.com/WICG/shared-element-transitions/issues/87): Is the freedom above a feature or a bug?
+
+## Signaling the end of a page transition
+
+At the start of the transition, the browser could gather all the `Animation`s active on the stage, and assume the animation is complete once all animations finish.
+
+In addition, the JS API could include a way to override this by letting the developer provide a promise which keeps the transition active, allowing for animations driven some other way, such as `requestAnimationFrame`.
+
+This is discussed in [#64](https://github.com/WICG/shared-element-transitions/issues/64).
+
+## Example
+
+Using the sketches above, here's how the example Page-A to Page-B transition could be done:
+
+https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
+
+In Page-A:
+
+```css
+.header {
+  page-transition-tag: header;
+  page-transition-capture: container-and-child;
+}
+
+.share-button {
+  page-transition-tag: share-button;
 }
 .header {
   page-transition-tag: header;

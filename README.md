@@ -198,7 +198,7 @@ navigations. This is not something that is currently possible, since neither
 the source nor the destination pages can access and blend pixel content from
 both pages.
 
-The API shape is being discussed on [this issue](https://github.com/vmpstr/shared-element-transitions/issues/2).
+The API shape is being discussed on [this issue](https://github.com/WICG/shared-element-transitions/issues/2).
 
 Part of the API remains the same: we need to prepare a frame before the
 animation can start. When the page is prepared, we can begin the animation with
