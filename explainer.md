@@ -12,10 +12,10 @@ Shared Element Transitions provides developers with the same capability on the w
 
 A visual demo of some example transition patterns targeted by this feature is [here](https://material.io/design/motion/the-motion-system.html#transition-patterns). The following is a summary of the semantics of these transition patterns:
 
-* Root Transitions: The full page content animates between two web pages with an optional static UI element on top. Examples 1 & 2 [here](https://material.io/design/motion/the-motion-system.html#shared-axis) are demonstrations of this.
-* Shared Element to Root Transitions: A persistent UI element morphs into the full page content on the next web page. [Container transform](https://material.io/design/motion/the-motion-system.html#container-transform) shows an example.
-* Shared Element Transitions: A persistent UI element morphs into another UI element on the next web page. The element's contents and shape can change during this transition. This [video](https://www.youtube.com/watch?v=SGnZN3NE0jA) shows an example.
-* Entry/Exit Transitions: A UI element animates as it exits or enters the screen. This [issue](https://github.com/WICG/shared-element-transitions/issues/37) shows an example.
+- Root Transitions: The full page content animates between two web pages with an optional static UI element on top. Examples 1 & 2 [here](https://material.io/design/motion/the-motion-system.html#shared-axis) are demonstrations of this.
+- Shared Element to Root Transitions: A persistent UI element morphs into the full page content on the next web page. [Container transform](https://material.io/design/motion/the-motion-system.html#container-transform) shows an example.
+- Shared Element Transitions: A persistent UI element morphs into another UI element on the next web page. The element's contents and shape can change during this transition. This [video](https://www.youtube.com/watch?v=SGnZN3NE0jA) shows an example.
+- Entry/Exit Transitions: A UI element animates as it exits or enters the screen. This [issue](https://github.com/WICG/shared-element-transitions/issues/37) shows an example.
 
 # Design
 
@@ -106,7 +106,11 @@ If 'transition containers' are used in combination with "element's computed styl
 
 ## Part 2: The preparation
 
-At this point the state has changed over to Page-B, and Page-A is gone aside from the elements it offered. In the MPA case, this happens when the navigation is complete. In the SPA case, this happens when the DOM is in the Page-B state and the developer signals that the change is complete (how to make that signal is discussed later in the API).
+At this point the state has changed over to Page-B, and Page-A is gone aside from the elements it offered.
+
+If Page-B is on a different origin to Page-A, the elements offered by Page-A are discarded, and the rest of the process is aborted. Cross-origin transitions are something we want to tackle, but they may have significant differences and restrictions for security reasons. How they may work is not explored in this version of this document.
+
+In the MPA case, this happens when the navigation is complete. In the SPA case, this happens when the DOM is in the Page-B state and the developer signals that the change is complete (how to make that signal is discussed later in the API).
 
 ### Setting the stage
 
@@ -202,7 +206,7 @@ Page-A can offer an element to be used in a transition via CSS, using the `page-
 
 The tag is a [`<custom-ident>`](https://www.w3.org/TR/css-values/#identifier-value). It's recommended to use 'root' to refer to the bottommost element that covers the viewport, which is usually `:root`, but this isn't enforced.
 
-Multiple elements can share a tag. For example, each comment of an article can use `page-transition-tag: comment`, and each comment will be offered for the transition.
+A tag must be unique for a document. If multiple elements share a tag, the transition will be abandoned. In future, multiple elements may be able to share a tag, but it isn't yet clear how that would work.
 
 The other modes mentioned in this document, such as "computed style + content image", and "retaining hierarchy" will be exposed via other CSS properties, and `page-transition` will be used as a shorthand. However, this is out of scope for 'v1'.
 
@@ -214,13 +218,15 @@ The JavaScript API extends on the capabilities of the CSS API. In particular, it
 document.addEventListener("pagehide", (event) => {
   if (!event.transition) return;
   event.transition.setElement(document.documentElement, "root");
-  event.transition.setData(data);
+  event.transition.setData({ … });
 });
 ```
 
+[Issue](https://github.com/WICG/shared-element-transitions/issues/112): `pagehide` may happen too late. We may need something like `beforepagehide`.
+
 The [`pagehide`](https://developer.mozilla.org/en-US/docs/Web/API/Window/pagehide_event) event is an existing event which fires during the unload of a document. The event type is currently [`PageTransitionEvent`](https://html.spec.whatwg.org/multipage/indices.html#events-2:pagetransitionevent). This proposal will change that to `PageHideTransitionEvent`, which extends `PageTransitionEvent`, and adds the following:
 
-- `event.nextURL` - The URL of the next page. Is `null` if cross-origin, or if there's no next page for this window.
+- `event.nextURL` - The URL of the next page. Is `null` if cross-origin, or if there's no next page for this window (e.g. when closing the window).
 - `event.transition` - `null` if a transition cannot be performed. The following needs to be true for transitions to be performed:
   - The browser supports page transitions.
   - This document is navigating to another (`pagehide` also fires if the iframe/tab is being removed).
@@ -228,10 +234,10 @@ The [`pagehide`](https://developer.mozilla.org/en-US/docs/Web/API/Window/pagehid
   - The window is top-level, although nested page transitions may be supported in future.
 - `event.transition.setElement(element, tag, options)` - Set an element to be used in the transition.
   - `element` - the element.
-  - `tag` - the tag name. Can be `null` to un-set this element.
+  - `tag` - the tag name. Can be `null` to un-set this element. This is equivalent to `page-transition-tag`.
   - `options` - reserved for future use. This is where "computed style + content image" and "retaining hierarchy" modes will be exposed.
 - `event.transition.setData(data)` - An object that is structured-cloned and passed to the next page.
-- `event.transition.ignoreCSSTaggedElements()`
+- `event.transition.ignoreCSSTaggedElements()` - Ignore any use of `page-transition-tag` on this page for this transition.
 
 Methods on `event.transition` must be called during the dispatch of the `pagehide` event, otherwise an error is thrown.
 
@@ -239,6 +245,7 @@ Once `pagehide` has dispatched:
 
 1. If `ignoreCSSTaggedElements` was not called, gather elements offered via `page-transition-tag`.
 1. Add/remove offered elements according to `setElement` calls.
+1. If multiple elements share the same tag, abandon the transition.
 1. If at least one element remains offered, a transition can go ahead.
 
 As a result of the above, if an element is offered via CSS and `setElement`, then `setElement` wins. If there are multiple calls to `setElement` for the same element, the last wins.
@@ -255,7 +262,7 @@ Page-B must also offer elements to use for a transition to happen. Page-B also c
 
 Page-B elements are offered for the transition using the same mechanism as in Page-A, `page-transition-tag`.
 
-Elements from Page-A and Page-B that have the same tag are merged into one transition elements as documented in "Mixing in elements from Page-B and associating them with transition elements from Page-A". If multiple elements have the same tag, they're associated in DOM order.
+Elements from Page-A and Page-B that have the same tag are merged into one transition elements as documented in "Mixing in elements from Page-B and associating them with transition elements from Page-A".
 
 #### Targeting transition elements
 
@@ -264,31 +271,31 @@ The pseudo-elements are constructed as documented in "how are transition element
 These pseudo-element selectors provide access to these pseudo-elements via `:root`:
 
 - `::page-transition(tag)` - Select the 'transition element' of a given `page-transition-tag`.
-- `::page-transition(tag)::image-wrapper` - Select the 'image wrapper'.
-- `::page-transition(tag)::image(outgoing | incoming)` - Select the incoming or outgoing image.
+- `::page-transition-image-wrapper(tag)` - Select the 'image wrapper'.
+- `::page-transition-image-incoming(tag)` - Select the incoming image.
+- `::page-transition-image-outgoing(tag)` - Select the outgoing image.
 
-`::page-transition` without a tag selects all transition elements.
-
-`::page-transition(tag nth odd)` can be used to select a subset of elements with the same tag, where 'odd' can be any valid [An+B](https://www.w3.org/TR/css-syntax-3/#anb-microsyntax).
+Using '\*' instead of a tag selects the equivalent element for every tag.
 
 #### Default styles
 
 These styles will be in the UA stylesheet:
 
 ```css
-::page-transition {
+::page-transition(*) {
   position: absolute;
   top: 0;
   left: 0;
 }
 
-::page-transition::image-wrapper {
+::page-transition-image-wrapper(*) {
   position: absolute;
   inset: 0;
   isolation: isolate;
 }
 
-::page-transition::image {
+::page-transition-image-incoming(*),
+::page-transition-image-outgoing(*) {
   position: absolute;
   top: 0;
   left: 0;
@@ -303,15 +310,16 @@ These styles will be in the UA stylesheet:
 
 The default animations are as follows:
 
-- The `::image(incoming)` animates _from_ opacity 0 with a fill-mode of `both`.
-- The `::image(outgoing)` animates _to_ opacity 0 with a fill-mode of `both`.
-- If an element exists in both Page-A and Page-B, a transform animation takes its container from Page-A size/transform to Page-B size/transform.
+- `::page-transition-image-incoming` animates _from_ opacity 0.
+- `::page-transition-image-outgoing` animates _to_ opacity 0.
+- If an element exists in both Page-A and Page-B, a transform animation takes its container from Page-A size/transform to Page-B size/transform. Otherwise the element will remain in its final position.
+
+All animations use a fill-mode of `both`.
 
 The styles to apply these animations will be dynamically added to the UA stylesheet, and removed once the transition is complete.
 
 - Open question: What are the default durations and easings?
 - Open question: Are the generated keyframes usable outside the UA stylesheet? If so, what are they called?
-- Open question: I worry that the default scaling animation makes it hard to do animations where both images cross-fade but don't change size, which feels like a common type of transition. I think this needs more thought.
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/84): Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/83): When will the default animation start? When the browser would usually first render Page-B?
 
@@ -353,15 +361,6 @@ In future, this API could include:
 
 - A way to delay the start of the transition, eg to wait for an image to load.
 - A way to enumerate the pseudo elements, which will depend on [CSSPseudoElement](https://drafts.csswg.org/css-pseudo-4/#CSSPseudoElement-interface).
-- A way to manually associate Page-A and Page-B elements, to change the default.
-
-## Example
-
-Using the sketches above, here's how the example Page-A to Page-B transition could be done:
-
-https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
-
-TODO
 
 # SPA API
 
@@ -377,7 +376,7 @@ document.createDocumentTransition(async (transition) => {
 
   transition.setElement(document.querySelector(".new-message"), "new-message");
 
-  await transition.start();
+  transition.start();
 
   document.documentElement.animate(keyframes, {
     ...animationOptions,
@@ -406,11 +405,11 @@ Calling `setElement` before `captureAndHold` means that element will be captured
 
 # Cross-fading
 
-Cross-fading two DOM elements is currently impossible if both layers feature transparency. This is due to the default composition operation: black with 50% opacity layered over black with 50% opacity becomes black with 75% opacity.
+[Cross-fading two DOM elements is currently impossible if both layers feature transparency](https://jakearchibald.com/2021/dom-cross-fade/). This is due to the default composition operation: black with 50% opacity layered over black with 50% opacity becomes black with 75% opacity.
 
-However, the [lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_lighter) compositing operation does the right thing when isolated to a set of elements whose `opacity` values add to 1. The "image wrapper" is meant to provide this isolation.
+However, the [plus-lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_plus_lighter) compositing operation does the right thing when isolated to a set of elements whose `opacity` values add to 1. The "image wrapper" is meant to provide this isolation.
 
-Allowing `mix-blend-mode` to be set to `lighter` will enable developers to create real cross-fades between elements for this feature and elsewhere.
+[Allowing `mix-blend-mode` to be set to `lighter`](https://github.com/w3c/fxtf-drafts/pull/444) will enable developers to create real cross-fades between elements for this feature and elsewhere.
 
 # Relation to `element()`
 
@@ -428,8 +427,8 @@ However, these variations could be included in `element()` using modifiers or si
 
 The security considerations below cover same-origin transitions.
 
-* Script can never read pixel content in the images. This is necessary since the document may embed cross-origin content (iframes, CORS resources, etc.) and multiple restricted user information (visited links history, dictionary used for spell check, etc.)
-* If an element is captured as a 'computed style + content image', any external resources specified on the container, such as background images, will be re-fetched in the context of the new page to account for differences in sandboxing.
+- Script can never read pixel content in the images. This is necessary since the document may embed cross-origin content (iframes, CORS resources, etc.) and multiple restricted user information (visited links history, dictionary used for spell check, etc.)
+- If an element is captured as a 'computed style + content image', any external resources specified on the container, such as background images, will be re-fetched in the context of the new page to account for differences in sandboxing.
 
 Cross-origin transitions aren't yet defined, but are likely to be heavily restricted.
 
