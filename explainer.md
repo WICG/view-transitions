@@ -4,7 +4,7 @@ https://user-images.githubusercontent.com/93594/140955654-fa944c4d-530e-4d3c-828
 
 When a user navigates on the web from Page-A to Page-B, the viewport jumps and there is a flash of white as elements disappear only to reappear in the same place in some in-progress state. This sequenced, disconnected user experience is disorienting and results in a higher-cognitive load as the user is forced to piece together how they got to where they came from. Additionally, this jarring experience increases how much users perceive the page loading as they stare at the white limbo state.
 
-Smooth loading animations can lower the cognitive load by helping users [stay in context](https://www.smashingmagazine.com/2013/10/smart-transitions-in-user-experience-design/) as they navigate from Page-A to Page-B, and [reduce the perceived latency](https://wp-rocket.me/blog/perceived-performance-need-optimize/#:~:text=1.%20Use%20activity%20and%20progress%20indicators) of loading by providing them with something engaging and delightful in the meantime.  For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
+Smooth loading animations can lower the cognitive load by helping users [stay in context](https://www.smashingmagazine.com/2013/10/smart-transitions-in-user-experience-design/) as they navigate from Page-A to Page-B, and [reduce the perceived latency](https://wp-rocket.me/blog/perceived-performance-need-optimize/#:~:text=1.%20Use%20activity%20and%20progress%20indicators) of loading by providing them with something engaging and delightful in the meantime. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
 
 https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
@@ -69,6 +69,7 @@ Capturing an element in this way isn't a new concept to the platform, as [`eleme
 Capturing as a CSS image avoids the interactivity risks, complexities, and memory impact of fully preserving these parts of Page-A as live DOM. On the other hand, it means that the capture will be 'static'. If it includes things like gifs, video, or other animating content, they'll be frozen on the frame they were displaying when captured.
 
 #### Image Size
+
 The size of the image cached for an element is equal to the element's [ink overflow rectangle](https://drafts.csswg.org/css-overflow-3/#ink-overflow-rectangle). This allows exposing parts of an element during the transition which may have been hidden earlier. The user-agent is allowed to clip the image to an implementation defined size (a common case would be the max texture size supported by the device). When caching a subset of the element due to this constraint, the area within the element cached by the user-agent is the area closest to the viewport.
 
 The size of the root image and the area captured follows a pattern similar to shared elements. However, since the root image is generated using the root stacking context it is likely to be clipped to an implementation defined size in most cases.
@@ -244,10 +245,13 @@ Also, data can be provided via `setData`. This can be anything structured-clonab
 // In Page-B
 document.performTransition((transition) => {
   console.log(transition.data);
-  const pageAHeader = transition.offeredElements.get('header');
-  const pageBHeader = transition.createTransitionElement(document.querySelector('.header'), {
-    capture: 'container-and-child',
-  });
+  const pageAHeader = transition.offeredElements.get("header");
+  const pageBHeader = transition.createTransitionElement(
+    document.querySelector(".header"),
+    {
+      capture: "container-and-child",
+    }
+  );
   transition.matchElements(pageAHeader, pageBHeader);
 });
 ```
