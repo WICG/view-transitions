@@ -295,7 +295,7 @@ CSS can be used to build on default animations, or override the default.
 
 Element selectors:
 
-- `::page-transition-container(name)` - Select the transition containers of a given `page-transition-tag`.
+- `::page-transition-container(page-transition-tag)` - Select the transition containers of a given `page-transition-tag`.
 - `::page-transition-image-wrapper(page-transition-tag)` - Select the transition parts of a given `page-transition-tag`.
 - `::page-transition-outgoing-image(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
 - `::page-transition-incoming-image(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
