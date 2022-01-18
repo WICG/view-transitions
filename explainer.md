@@ -299,9 +299,6 @@ Element selectors:
 - `::page-transition-image-wrapper(page-transition-tag)` - Select the transition parts of a given `page-transition-tag`.
 - `::page-transition-outgoing-image(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
 - `::page-transition-incoming-image(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
-- `::page-transition-root-outgoing` - Select the outgoing root image.
-- `::page-transition-root-incoming` - Select the incoming root image.
-- `::page-transition-root-container` - Useful for cases where something needs to be rendered underneath the root images.
 
 These will be selecting UA generated pseudo-elements.
 
