@@ -282,7 +282,8 @@ The pseudo-elements are constructed as documented in "how are transition element
 
 These pseudo-element selectors provide access to these pseudo-elements via `:root`:
 
-- `::page-transition(tag)` - Select the 'transition element' of a given `page-transition-tag`.
+- `::page-transition` - The parent of all transition containers.
+- `::page-transition-container(tag)` - Select the 'transition element' of a given `page-transition-tag`.
 - `::page-transition-image-wrapper(tag)` - Select the 'image wrapper'.
 - `::page-transition-incoming-image(tag)` - Select the incoming image.
 - `::page-transition-outgoing-image(tag)` - Select the outgoing image.
@@ -294,7 +295,12 @@ Using '\*' instead of a tag selects the equivalent element for every tag.
 These styles will be in the UA stylesheet:
 
 ```css
-::page-transition(*) {
+::page-transition {
+  position: fixed;
+  inset: 0;
+}
+
+::page-transition-container(*) {
   position: absolute;
   top: 0;
   left: 0;
@@ -354,7 +360,7 @@ document.addEventListener("beforepageshow", async (event) => {
   // The pseudo-elements are now accessible and can be animated:
   document.documentElement.animate(keyframes, {
     ...animationOptions,
-    pseudoElement: "::page-transition(header)",
+    pseudoElement: "::page-transition-container(header)",
   });
 });
 ```
@@ -392,7 +398,7 @@ document.createDocumentTransition(async (transition) => {
 
   document.documentElement.animate(keyframes, {
     ...animationOptions,
-    pseudoElement: "::page-transition(new-message)",
+    pseudoElement: "::page-transition-container(new-message)",
   });
 });
 ```
