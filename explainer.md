@@ -195,163 +195,19 @@ Note that the browser defers displaying elements from Page-B and starting the an
 
 When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B. The transition completes once no pseudo element has an active animation.
 
-# The MPA API
+# The cross-document transition API
 
-There are a lot of open questions around the API, but this section will give a flavor of the direction.
+## Page-A
 
-Little thought has been giving to naming in these APIs, which will be improved when there's stronger consensus around the concepts.
+Page-A must offer elements to use for a transition, otherwise no transition will happen.
 
-## Creating a transition element
+### Via CSS
 
-### CSS properties
-
-```css
-.header {
-  page-transition-tag: header;
-  page-transition-capture: container-and-child;
-}
-```
-
-Setting a `page-transition-tag` marks this element as a transition element, and the `page-transition-capture` property is used to indicate how it's captured (as a single image vs as a computed style + content image).
-
-Multiple elements could have the same `page-transition-tag` value, which is useful for aggregate content such as user comments.
-
-Elements on Page-A and Page-B which have the same `page-transition-tag` are automatically associated with each other. If multiple elements have the same value, they're associated in DOM order.
-
-Using CSS properties means values can change depending on viewport (`@media`) and browser support (`@supports`).
-
-### JS API
-
-```js
-// In Page-A
-addEventListener('navigate', (event) => {
-  event.prepareSameOriginPageTransition((transition) => {
-    transition.offerElement('header', document.querySelector('.header'), {
-      capture: 'container-and-child',
-    });
-
-    transition.setData({…});
-  });
-});
-```
-
-Expanding on the capabilities of the CSS properties, a JS API allows the developer to change which parts are offered depending on the destination of the navigation, and the direction of navigation (back vs forward). This builds on top of the [app-history API](https://github.com/WICG/app-history).
-
-Also, data can be provided via `setData`. This can be anything structured-clonable, and will be made available to Page-B.
-
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/78): Do we need `offerElement`? The same thing could be done by adding the CSS properties.
-
-```js
-// In Page-B
-document.performTransition((transition) => {
-  console.log(transition.data);
-  const pageAHeader = transition.offeredElements.get("header");
-  const pageBHeader = transition.createTransitionElement(
-    document.querySelector(".header"),
-    {
-      capture: "container-and-child",
-    }
-  );
-  transition.matchElements(pageAHeader, pageBHeader);
-});
-```
-
-This sketch is particularly half-baked. A more concrete proposal will be possible when more of the concepts are decided.
-
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/79): Do we need `createTransitionElement`? It could be done via adding CSS properties, but it might be clumsy if the developer is going to immediately remove the properties afterwards.
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/80): How does the outgoing page offer just the root for transition?
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/81): When is the `performTransition` callback called?
-
-## Defining the animation
-
-How will Page-B define the animation?
-
-### Default animation
-
-The potential default animations setup for the different cases are as follows. Note all of these can be overridden by the developer:
-
-- If an element exists in Page-A only (exit animation), a fade animation takes its container from opacity 1 to 0.
-- If an element exists in Page-B only (entry animation), a fade animation takes its container from opacity 0 to 1.
-- If an element exists in both Page-A and Page-B, and both are 'container and content', an animation takes the container from Page-A styles to Page-B styles (which will include the transform used for positioning), while cross-fading the two images.
-- If an element exists in both Page-A and Page-B, and neither are 'container and child', a transform animation takes its container from Page-A size/transform to Page-B size/transform, while cross-fading the two images.
-- If an element exists in both Page-A and Page-B and only one of them is 'container and content', both are forced to use 'single image' mode and use the default animation described above. See [issue](https://github.com/WICG/shared-element-transitions/issues/82) for detailed discussion.
-
-Because the images are sized to 100% of the container, the images will also change size throughout the transition. How these are scaled can be changed using regular CSS features like `object-fit`.
-
-In all cases, the duration and easing is some undecided default, that could even be platform independent.
-
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/84): Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/85): If the developer wants a default animation of the root only, how do they define that?
-
-### CSS animation
-
-CSS can be used to build on default animations, or override the default.
+Page-A can offer an element to be used in a transition via CSS, using the `page-transition-tag` property:
 
 ```css
-::page-transition-container(header) {
-  /* … */
-}
-```
-
-Element selectors:
-
-- `::page-transition-container(page-transition-tag)` - Select the transition containers of a given `page-transition-tag`.
-- `::page-transition-image-wrapper(page-transition-tag)` - Select the transition parts of a given `page-transition-tag`.
-- `::page-transition-outgoing-image(page-transition-tag)` - Select the outgoing image of a given `page-transition-tag`.
-- `::page-transition-incoming-image(page-transition-tag)` - Select the incoming image of a given `page-transition-tag`.
-
-These will be selecting UA generated pseudo-elements.
-
-```css
-::page-transition-container(header) {
-  animation-delay: 300ms;
-}
-```
-
-CSS can be used to make changes to the default animation, or override `animation-name` to remove the default.
-
-### JavaScript access to elements
-
-So far the transition elements have been addressed by pseudo-element selectors, but JavaScript could be given access to the elements using the [CSSPseudoElement](https://drafts.csswg.org/css-pseudo-4/#CSSPseudoElement-interface) interface.
-
-```js
-// In Page-B
-document.performTransition((transition) => {
-  // Build up transition parts, then…
-  document.documentElement.pseudo("page-transition-container(name)").animate(...);
-});
-```
-
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/86) What's the deadline for calling `performTransition`?
-
-Note that using pseudo-elements here implies that the developer can not change the DOM structure of transition elements. An alternate approach considered to provide this extensibility uses shadow DOM. The pseudo-element option was preferred to make it easier to build on concepts which already exist in the platform and ensure ease of implementation. See [issue](https://github.com/WICG/shared-element-transitions/issues/93) for detailed discussion.
-
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/87): Is the freedom above a feature or a bug?
-
-## Signaling the end of a page transition
-
-At the start of the transition, the browser could gather all the `Animation`s active on the stage, and assume the animation is complete once all animations finish.
-
-In addition, the JS API could include a way to override this by letting the developer provide a promise which keeps the transition active, allowing for animations driven some other way, such as `requestAnimationFrame`.
-
-This is discussed in [#64](https://github.com/WICG/shared-element-transitions/issues/64).
-
-## Example
-
-Using the sketches above, here's how the example Page-A to Page-B transition could be done:
-
-https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
-
-In Page-A:
-
-```css
-.header {
-  page-transition-tag: header;
-  page-transition-capture: container-and-child;
-}
-
-.share-button {
-  page-transition-tag: share-button;
+:root {
+  page-transition-tag: root;
 }
 .header {
   page-transition-tag: header;
@@ -359,6 +215,8 @@ In Page-A:
 ```
 
 The tag is a [`<custom-ident>`](https://www.w3.org/TR/css-values/#identifier-value). It's recommended to use 'root' to refer to the bottommost element that covers the viewport, which is usually `:root`, but this isn't enforced.
+
+Page-A must offer elements to use for a transition, otherwise no transition will happen.
 
 A tag must be unique for a document. If multiple elements share a tag, the transition will be abandoned. In future, multiple elements may be able to share a tag, but it isn't yet clear how that would work.
 
@@ -426,8 +284,8 @@ These pseudo-element selectors provide access to these pseudo-elements via `:roo
 
 - `::page-transition(tag)` - Select the 'transition element' of a given `page-transition-tag`.
 - `::page-transition-image-wrapper(tag)` - Select the 'image wrapper'.
-- `::page-transition-image-incoming(tag)` - Select the incoming image.
-- `::page-transition-image-outgoing(tag)` - Select the outgoing image.
+- `::page-transition-incoming-image(tag)` - Select the incoming image.
+- `::page-transition-outgoing-image(tag)` - Select the outgoing image.
 
 Using '\*' instead of a tag selects the equivalent element for every tag.
 
@@ -448,8 +306,8 @@ These styles will be in the UA stylesheet:
   isolation: isolate;
 }
 
-::page-transition-image-incoming(*),
-::page-transition-image-outgoing(*) {
+::page-transition-incoming-image(*),
+::page-transition-outgoing-image(*) {
   position: absolute;
   top: 0;
   left: 0;
@@ -460,12 +318,12 @@ These styles will be in the UA stylesheet:
 }
 ```
 
-#### Transition animations
+#### Animations
 
 The default animations are as follows:
 
-- `::page-transition-image-incoming` animates _from_ opacity 0.
-- `::page-transition-image-outgoing` animates _to_ opacity 0.
+- `::page-transition-incoming-image` animates _from_ opacity 0.
+- `::page-transition-outgoing-image` animates _to_ opacity 0.
 - If an element exists in both Page-A and Page-B, a transform animation takes its container from Page-A size/transform to Page-B size/transform. Otherwise the element will remain in its final position.
 
 All animations use a fill-mode of `both`.
@@ -516,7 +374,7 @@ In future, this API could include:
 - A way to delay the start of the transition, eg to wait for an image to load.
 - A way to enumerate the pseudo elements, which will depend on [CSSPseudoElement](https://drafts.csswg.org/css-pseudo-4/#CSSPseudoElement-interface).
 
-# SPA API
+# Same-document transition API
 
 The mechanism for cross-document transitions and SPA transitions involves the same phases, so an SPA API will expose those parts in the same page.
 
@@ -556,14 +414,6 @@ document.createDocumentTransition(async (transition) => {
 ```
 
 Calling `setElement` before `captureAndHold` means that element will be captured as both "outgoing" and "incoming", unless the element is removed before `start()`, or is assigned a different tag via `setElement`.
-
-# Cross-fading
-
-[Cross-fading two DOM elements is currently impossible if both layers feature transparency](https://jakearchibald.com/2021/dom-cross-fade/). This is due to the default composition operation: black with 50% opacity layered over black with 50% opacity becomes black with 75% opacity.
-
-However, the [plus-lighter](https://drafts.fxtf.org/compositing/#porterduffcompositingoperators_plus_lighter) compositing operation does the right thing when isolated to a set of elements whose `opacity` values add to 1. The "image wrapper" is meant to provide this isolation.
-
-[Allowing `mix-blend-mode` to be set to `lighter`](https://github.com/w3c/fxtf-drafts/pull/444) will enable developers to create real cross-fades between elements for this feature and elsewhere.
 
 # Relation to `element()`
 
