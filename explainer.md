@@ -339,11 +339,10 @@ The styles to apply these animations will be dynamically added to the UA stylesh
 - Open question: What are the default durations and easings?
 - Open question: Are the generated keyframes usable outside the UA stylesheet? If so, what are they called?
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/84): Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/83): When will the default animation start? When the browser would usually first render Page-B?
 
 All of these can be overridden by the developer via CSS animations.
 
-The animation is considered complete once all animations on all the pseudo-elements finish.
+Note that the animation starts when Page-B is ready to render its first frame. Developers can configure this using the [blocking attribute](https://github.com/whatwg/html/issues/7131). The animation is considered complete once all animations on all the ::page-transition* pseudo-elements finish.
 
 ### Via JavaScript
 
