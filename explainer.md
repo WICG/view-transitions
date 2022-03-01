@@ -342,7 +342,7 @@ The styles to apply these animations will be dynamically added to the UA stylesh
 
 All of these can be overridden by the developer via CSS animations.
 
-Note that the animation start when Page-B is ready to render its first frame. Developers can configure this using the [blocking attribute](https://github.com/whatwg/html/issues/7131). The animation is considered complete once all animations on all the pseudo-elements finish.
+Note that the animation starts when Page-B is ready to render its first frame. Developers can configure this using the [blocking attribute](https://github.com/whatwg/html/issues/7131). The animation is considered complete once all animations on all the ::page-transition* pseudo-elements finish.
 
 ### Via JavaScript
 
