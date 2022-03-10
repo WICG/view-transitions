@@ -402,7 +402,6 @@ async function doTransition() {
     await coolFramework.changeTheDOMToPageB();
     
     // Tag elements animated during the transition on the new page.
-    transition.clearElements();
     transition.setElement(document.querySelector(".new-message"), "message");
     
     // Set up animations using WA-API on the next frame.
