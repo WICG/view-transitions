@@ -384,22 +384,36 @@ In future, this API could include:
 The mechanism for cross-document transitions and SPA transitions involves the same phases, so an SPA API will expose those parts in the same page.
 
 ```js
-document.createDocumentTransition(async (transition) => {
-  transition.setElement(document.documentElement, "root");
-
-  await transition.captureAndHold();
-
-  await coolFramework.changeTheDOMToPageB();
-
-  transition.setElement(document.querySelector(".new-message"), "new-message");
-
-  transition.start();
-
-  document.documentElement.animate(keyframes, {
-    ...animationOptions,
-    pseudoElement: "::page-transition-container(new-message)",
+async function doTransition() {
+  let transition = document.createDocumentTransition();
+  
+  // Specify offered elements. The tag below is used to refer
+  // to the generated pseudo elemends in script/CSS.
+  transition.setElement(document.querySelector(".old-message"), "message");
+  
+  // The start() call triggers an async operation to capture
+  // snapshots for the offered elements,
+  await transition.start(async() => {
+    // This callback is invoked by the browser when the capture
+    // finishes and the DOM can be switched to the new state.
+    // No frames are rendered until this callback returns.
+    
+    // Asynchronously load the new page.
+    await coolFramework.changeTheDOMToPageB();
+    
+    // Tag elements animated during the transition on the new page.
+    transition.clearElements();
+    transition.setElement(document.querySelector(".new-message"), "message");
+    
+    // Set up animations using WA-API on the next frame.
+    requestAnimationFrame(() => {
+      document.documentElement.animate(keyframes, {
+      ...animationOptions,
+      pseudoElement: "::page-transition-container(message)",
+      });
+    });
   });
-});
+}
 ```
 
 - `transition.setElement(element, tag, options)` - Same arguments as the MPA API.
