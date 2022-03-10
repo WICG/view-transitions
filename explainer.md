@@ -411,6 +411,7 @@ async function doTransition() {
       pseudoElement: "::page-transition-container(message)",
       });
     });
+    // Note that when this callback finishes, the animation will start with the specified shared elements / WA
   });
 }
 ```
