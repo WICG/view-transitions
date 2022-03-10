@@ -393,7 +393,7 @@ async function doTransition() {
   
   // The start() call triggers an async operation to capture
   // snapshots for the offered elements,
-  await transition.start(async() => {
+  await transition.start(async () => {
     // This callback is invoked by the browser when the capture
     // finishes and the DOM can be switched to the new state.
     // No frames are rendered until this callback returns.
