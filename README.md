@@ -23,7 +23,7 @@ Root and Shared Element transitions enable you to create transition animations f
 
 ### Current Status
 
-The API is available in Chrome Canary as of M101 behind a flag at chrome://flags/#document-transition; however, currently it is only functional for same-origin SPAs. 
+The API is available in Chrome Canary as of version 101 behind a flag at chrome://flags/#document-transition; however, currently it is only functional for SPAs. 
 
 Animations in same-origin MPA are targeted as future scope. However, the goal is that using the API for SPA and MPA transitions will be very similar. In the more distant future, the API is planned to be extended to cross-origin cases, with slightly more limited functionality due to security. Cross-origin transitions are not covered in this document. 
 
