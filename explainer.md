@@ -349,7 +349,9 @@ configured by UA and/or developer stylesheets using z-index.
 
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/23):
   How should the default UA animation order these elements? And also handle a
-  change in associated elements between the 2 pages.
+  change in associated elements between the 2 pages. Currently they are ordered
+  by paint order. For instance, parents are ordered before children, and
+  negative z-index elements are ordered before positive z-index elements.
 
 ### How are transition elements painted?
 
@@ -402,28 +404,28 @@ happen.
 ### Via CSS
 
 Page-A can offer an element to be used in a transition via CSS, using the
-`page-transition-tag` property:
+`page-transition-tag` property, with a default value of `none`:
 
 ```css
-:root {
-  page-transition-tag: root;
-}
 .header {
   page-transition-tag: header;
+}
+.content {
+  page-transition-tag: content;
 }
 ```
 
 The tag is a
-[`<custom-ident>`](https://www.w3.org/TR/css-values/#identifier-value). It's
-recommended to use 'root' to refer to the bottommost element that covers the
-viewport, which is usually `:root`, but this isn't enforced.
+[`<custom-ident>`](https://www.w3.org/TR/css-values/#identifier-value).
 
-Page-A must offer elements to use for a transition, otherwise no transition will
-happen.
+Note that `root` is a reserved tag, which is automatically applied to the
+`:root` element, which is always captured during the transition.
+
+Also note that since `none` is the default value for this property, it is
+reserved and is unavailable for use during the transition.
 
 A tag must be unique for a document. If multiple elements share a tag, the
-transition will be abandoned. In future, multiple elements may be able to share
-a tag, but it isn't yet clear how that would work.
+transition will be abandoned.
 
 The other modes mentioned in this document, such as "computed style + content
 image", and "retaining hierarchy" will be exposed via other CSS properties, and
@@ -469,7 +471,9 @@ This proposal will change that to `PageHideTransitionEvent`, which extends
   used in the transition.
   - `element` - the element.
   - `tag` - the tag name. Can be `null` to un-set this element. This is
-    equivalent to `page-transition-tag`.
+    similar to `page-transition-tag`. One difference is that the script API
+    allows an element to have multiple tags set on it. This is supported for an
+    effect where a single element transitions to two distinct elements.
   - `options` - reserved for future use. This is where "computed style + content
     image" and "retaining hierarchy" modes will be exposed.
 - `event.transition.setData(data)` - An object that is structured-cloned and
@@ -486,11 +490,10 @@ Once `pagehide` has dispatched:
    `page-transition-tag`.
 1. Add/remove offered elements according to `setElement` calls.
 1. If multiple elements share the same tag, abandon the transition.
-1. If at least one element remains offered, a transition can go ahead.
+1. A transition happens.
 
-As a result of the above, if an element is offered via CSS and `setElement`,
-then `setElement` wins. If there are multiple calls to `setElement` for the same
-element, the last wins.
+Note that this can result in a single element being assigned multiple tags. This
+will result in multiple transitions originating from the same element.
 
 Gathering offered elements _after_ the dispatch of `pagehide` means the
 developer can use a mix of the CSS and JS methods. For instance, the developer
@@ -529,6 +532,10 @@ These pseudo-element selectors provide access to these pseudo-elements via
 - `::page-transition-outgoing-image(tag)` - Select the outgoing image.
 
 Using '\*' instead of a tag selects the equivalent element for every tag.
+
+Issue: It would be nice to be consistent with the '\*' CSS selector in that we
+would like `::page-transition(*)` to have a lower specificity than
+`::page-transition(tag)`. 
 
 #### Default styles
 
@@ -677,10 +684,10 @@ async function doTransition() {
 
 - `transition.setElement(element, tag, options)` - Same arguments as the MPA
   API.
-- `transition.captureAndHold()` - Capture any currently offered element as
-  "outgoing", and hold the current rendered view. Resolves when ready.
-- `transition.start()` - Capture any offered element as "incoming", and match
-  them to outgoing elements as in the MPA model.
+- `transition.start(callback)` - Asynchornously capture any offered element as
+  "outgoing". When finished, invoke the callback. When the callback finishes
+  running, capture any new elements as "incoming". Match outgoing and incoming
+  elements and begin transition.
 - `transition.ignoreCSSTaggedElements()` - Same as MPA API.
 - `transition.abandon()` - Same as MPA API.
 
@@ -689,15 +696,12 @@ for `createDocumentTransition` to be small and have CSS handle the rest:
 
 ```js
 document.createDocumentTransition(async (transition) => {
-  await transition.captureAndHold();
-  await coolFramework.changeTheDOMToPageB();
-  transition.start();
+  transition.start(async () => { await coolFramework.changeTheDOMToPageB() });
 });
 ```
 
-Calling `setElement` before `captureAndHold` means that element will be captured
-as both "outgoing" and "incoming", unless the element is removed before
-`start()`, or is assigned a different tag via `setElement`.
+Calling `setElement` before `start` means that element will be captured as both
+"outgoing". Calling it within the `start` callback will mark them as "incoming".
 
 # Relation to `element()`
 
@@ -721,6 +725,11 @@ similarly named functions (e.g. `element-children()`).
 [Here](https://jsbin.com/bisoleziyi/edit?html,output) is a polyfill example of a
 single image mode transition built using the existing element() support in
 Firefox.
+
+Note that we are not currently planning on exposing the stand-alone method of
+capturing the elements, as would be possible with an `element()` function.
+Instead, the capturing and displaying the contents via the pseudo elements is an
+internal detail.
 
 # Security/Privacy Considerations
 
