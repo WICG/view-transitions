@@ -59,7 +59,7 @@ async function spaNavigate(data) {
     // The DOM has now updated, but the user is still looking at the screenshotted state.
     // Once this async function returns, the transition will begin.
   });
-  // The transition is now complete, and the screenshotted state is removed to reveal
+  // The transition is now complete, and the captured state is removed to reveal
   // the real DOM underneath.
 }
 ```
