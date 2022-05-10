@@ -10,7 +10,7 @@ This feature requires the `chrome://flags/#document-transition` flag.
 
 [Here's a demo](https://http203-playlist.netlify.app/) that uses many of the techniques in this guide.
 
-In addition to the `chrome://flags/#document-transition` flag, it also requires `chrome://flags/#enable-experimental-web-platform-features`.
+In addition to the `chrome://flags/#document-transition` flag, the demo also requires `chrome://flags/#enable-experimental-web-platform-features` to enable navigation API.
 
 ## Performing a basic page transition
 
