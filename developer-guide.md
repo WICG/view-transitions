@@ -56,7 +56,7 @@ async function spaNavigate(data) {
     // This screenshot is now being displayed rather than the real DOM.
     // Any animated content on the page (e.g. CSS animations, videos, GIFs) will now appear frozen.
     await updateTheDOMSomehow();
-    // The DOM has now updated, but the user is still looking at the screenshotted state.
+    // The DOM has now updated, but the user is still looking at the captured state.
     // Once this async function returns, the transition will begin.
   });
   // The transition is now complete, and the captured state is removed to reveal
