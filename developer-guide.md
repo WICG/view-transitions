@@ -14,7 +14,7 @@ In addition to the `chrome://flags/#document-transition` flag, the demo also req
 
 ## Performing a basic page transition
 
-This API will support cross-document navigations (sometimes called 'MPA') in future, but right now only same-document (or SPA) navigations are supported.
+This API will support cross-document navigations (sometimes called Multi-Page App, or 'MPA') in future, but right now only same-document (or SPA) navigations are supported.
 
 Here's how to create a basic transition:
 
