@@ -22,13 +22,13 @@ Here's how to create a basic transition:
 async function spaNavigate(data) {
   // Fallback
   if (!document.createDocumentTransition) {
-    await updateDOMForPage(data);
+    await updateTheDOMSomehow(data);
     return;
   }
 
   // With a transition
   const transition = document.createDocumentTransition();
-  await transition.start(() => updateDOMForPage(data));
+  await transition.start(() => updateTheDOMSomehow(data));
   console.log("Transition complete!");
 }
 ```
@@ -45,7 +45,7 @@ Here's what happened at each stage in the process:
 async function spaNavigate(data) {
   // Fallback
   if (!document.createDocumentTransition) {
-    await updateDOMForPage(data);
+    await updateTheDOMSomehow(data);
     return;
   }
 
@@ -69,14 +69,14 @@ The default transition is a cross-fade from the screenshotted state to the new s
 The 'screenshot' is actually a DOM structure created out of pseudo-elements that sits in a special top-layer:
 
 ```html
-<special-top-layer>
+<top-layer>
   <container(root)>
     <image-wrapper(root)>
       <outgoing-image(root) />
       <incoming-image(root) />
     </image-wrapper(root)>
   </container(root)>
-</special-top-layer>
+</top-layer>
 ```
 
 The `outgoing-image` and `incoming-image` represent the visual outgoing and incoming states, and they render as CSS 'replaced content' (like an `<img>`). The outgoing-image animates from `opacity: 1` to `opacity: 0`, whereas the incoming-image animates from `opacity: 0` to `opacity: 1`, creating a cross-fade.
@@ -159,19 +159,19 @@ await transition.start(callback);
 console.log("Transition complete!");
 ```
 
-The API supports asynchronous DOM updates, which are common in most frameworks. To make this work, `callback` should return a promise that resolves once the DOM update is complete. However, remember that the user is left with a non-interactive screenshot between `callback` being called and its promise resolving, so this should happen as fast as position. Specifically, avoid things like network activity – do those before creating the transition, like this:
+The API supports asynchronous DOM updates, which are common in most frameworks. To make this work, `callback` should return a promise that resolves once the DOM update is complete. However, remember that the user is left with a non-interactive screenshot between `callback` being called and its promise resolving, so this should happen as fast as possible. Specifically, avoid things like network activity – do those before creating the transition, like this:
 
 ```js
 async function spaNavigate(path) {
-  const data = await fetchDataForPage(path);
+  const data = await fetchDataAndPrepareImagesForPage(path);
 
   if (!document.createDocumentTransition) {
-    await updateDOMForPage(data);
+    await updateTheDOMSomehow(data);
     return;
   }
 
   const transition = document.createDocumentTransition();
-  await transition.start(() => updateDOMForPage(data));
+  await transition.start(() => updateTheDOMSomehow(data));
 }
 ```
 
@@ -203,7 +203,7 @@ This changes how the page is captured. When `transition.start(callback)` is call
 If our header exists on both sides of the DOM change, we'll now have a structure like this:
 
 ```html
-<special-top-layer>
+<top-layer>
   <container(root)>
     <image-wrapper(root)>
       <outgoing-image(root) />
@@ -217,7 +217,7 @@ If our header exists on both sides of the DOM change, we'll now have a structure
       <incoming-image(site-header) />
     </image-wrapper(site-header)>
   </container(site-header)>
-</special-top-layer>
+</top-layer>
 ```
 
 Although, it's possible to have one of these structures that doesn't have an incoming/outgoing image. For example, if the element was only there before the DOM change, or only there after the DOM change.
@@ -228,7 +228,7 @@ The default animation animates the `width` and `height` of the `::page-transitio
 
 ### Flat transition structures
 
-Each captured element, along with the root, will be a direct child of the special top layer. This means you can move elements between containers, even if they have `overflow: hidden` or some other form of clipping in the real DOM.
+Each captured element, along with the root, generates a subtree of pseudo elements which is direct child of the top layer. This means you can move elements between containers, even if they have `overflow: hidden` or some other form of clipping in the real DOM.
 
 We plan to add a feature to allow one transition container to be nested within another, but that isn't currently implemented.
 
@@ -236,13 +236,13 @@ We plan to add a feature to allow one transition container to be nested within a
 
 Right now, there's a delay between Chrome creating the outgoing image element, and the incoming image element. That means the styles for the outgoing image element will apply sooner, which in turn means its animation will start sooner, and apply out of sync with the incoming image element.
 
-This is considered a bug (well, a design error), but you can work around it:
+This is considered a [bug](https://bugs.chromium.org/p/chromium/issues/detail?id=1310798) (well, a design error), but you can work around it:
 
 ```js
 async function spaNavigate(data) {
   // Fallback
   if (!document.createDocumentTransition) {
-    await updateDOMForPage(data);
+    await updateTheDOMSomehow(data);
     return;
   }
 
@@ -253,7 +253,7 @@ async function spaNavigate(data) {
   document.documentElement.classList.add("transition-warming-up");
 
   await transition.start(async () => {
-    await updateDOMForPage(data);
+    await updateTheDOMSomehow(data);
 
     // Now remove it:
     document.documentElement.classList.remove("transition-warming-up");
@@ -277,7 +277,7 @@ This pauses the animations until both the outgoing and incoming content is ready
 
 The default animation animates the `width` and `height` of the `::page-transition-container`, which is generally frowned upon in web performance circles, as it runs layout per frame. However, for page transitions, we plan to optimize it so it isn't an issue (it isn't optimized yet).
 
-To benefit of this, is `object-fit` and `object-position` become really useful.
+The benefit of this, is `object-fit` and `object-position` become really useful.
 
 Let's say you're animating a 4:3 thumbnail of an image to a 16:9 full version:
 
@@ -301,6 +301,8 @@ Let's say you're animating a 4:3 thumbnail of an image to a 16:9 full version:
   animation: none;
   /* As the container transitions from 4:3 to 16:9, gradually un-crop the image. */
   object-fit: cover;
+  /* Clip the overflowed content */
+  overflow: clip;
 }
 ```
 
@@ -310,10 +312,10 @@ Sometimes a page transition can be custom between particular states. Currently, 
 
 ```js
 async function spaNavigate(fromPath, toPath) {
-  const data = await fetchDataForPage(toPath);
+  const data = await fetchDataAndPrepareImagesForPage(toPath);
 
   if (!document.createDocumentTransition) {
-    await updateDOMForPage(data);
+    await updateTheDOMSomehow(data);
     return;
   }
 
@@ -322,7 +324,7 @@ async function spaNavigate(fromPath, toPath) {
   }
 
   const transition = document.createDocumentTransition();
-  await transition.start(() => updateDOMForPage(data));
+  await transition.start(() => updateTheDOMSomehow(data));
 
   document.documentElement.classList.remove("transition-from-home-to-video");
 }
