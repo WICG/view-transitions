@@ -1,5 +1,7 @@
 # Shared Element Transitions
 
+For help getting started quickly, check out the [developer guide](https://github.com/WICG/shared-element-transitions/blob/main/developer-guide.md) for easy to follow steps, and the I/O 2022 [talk](https://youtu.be/JCJUPJ_zDQ4) and [codelab](https://youtu.be/eUX91N6Gj1Q?t=2058) about Shared Element Transitions for more visuals and help. 
+
 ### Overview
 
 Shared Element Transitions is a proposal for a new web API that allows a
