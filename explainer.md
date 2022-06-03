@@ -434,13 +434,13 @@ image", and "retaining hierarchy" will be exposed via other CSS properties, and
 
 ### Via JavaScript
 
-The JavaScript API extends on the capabilities of the CSS API. In particular, it
-allows the developer to react to the URL of Page-B.
+There is no dedicated API to set the shared element in JavaScript, but one can
+accomplish the task with inline styles:
 
 ```js
 document.addEventListener("pagehide", (event) => {
   if (!event.transition) return;
-  event.transition.setElement(document.documentElement, "root");
+  document.getElementById("foo").style.pageTransitionTag = "foo";
   event.transition.setData({ … });
 });
 ```
@@ -467,7 +467,6 @@ This proposal will change that to `PageHideTransitionEvent`, which extends
     future.
   - The window is top-level, although nested page transitions may be supported
     in future.
-- `event.transition.setElement(element, tag, options)` - Set an element to be
   used in the transition.
   - `element` - the element.
   - `tag` - the tag name. Can be `null` to un-set this element. This is
@@ -478,17 +477,12 @@ This proposal will change that to `PageHideTransitionEvent`, which extends
     image" and "retaining hierarchy" modes will be exposed.
 - `event.transition.setData(data)` - An object that is structured-cloned and
   passed to the next page.
-- `event.transition.ignoreCSSTaggedElements()` - Ignore any use of
-  `page-transition-tag` on this page for this transition.
 
 Methods on `event.transition` must be called during the dispatch of the
 `pagehide` event, otherwise an error is thrown.
 
 Once `pagehide` has dispatched:
 
-1. If `ignoreCSSTaggedElements` was not called, gather elements offered via
-   `page-transition-tag`.
-1. Add/remove offered elements according to `setElement` calls.
 1. If multiple elements share the same tag, abandon the transition.
 1. A transition happens.
 
@@ -609,8 +603,7 @@ The JavaScript API extends on the capabilities of the CSS API.
 ```js
 document.addEventListener("beforepageshow", async (event) => {
   if (!event.transition) return;
-  event.transition.setElement(document.documentElement, "root");
-  event.transition.setElement(document.querySelector(".header"), "header");
+  document.querySelector(".header").style.pageTransitionTag = "header";
 
   await event.transition.ready;
 
@@ -634,8 +627,6 @@ that's executed before the page is shown.
 - `event.transition` - `null` if Page-A did not offer any elements.
 - `event.transition.data` - Data set by Page-A via `setData`.
 - `event.transition.abandon()` - Abandon the transition.
-- `event.transition.setElement(element, tag, options)` - Same API as in Page-A.
-- `event.transition.ignoreCSSTaggedElements()` - Same API as in Page-A.
 
 In future, this API could include:
 
@@ -654,7 +645,7 @@ async function doTransition() {
   
   // Specify offered elements. The tag below is used to refer
   // to the generated pseudo elemends in script/CSS.
-  transition.setElement(document.querySelector(".old-message"), "message");
+  document.querySelector(".old-message").style.pageTransitionTag = "message";
   
   // The start() call triggers an async operation to capture
   // snapshots for the offered elements,
@@ -666,8 +657,10 @@ async function doTransition() {
     // Asynchronously load the new page.
     await coolFramework.changeTheDOMToPageB();
     
-    // Tag elements animated during the transition on the new page.
-    transition.setElement(document.querySelector(".new-message"), "message");
+    // Clear the old message if that element is still in the page
+    document.querySelector(".old-message").style.pageTransitionTag = "";
+    // Set new message as the shared element 'message'
+    document.querySelector(".new-message").style.pageTransitionTag = "message";
     
     // Set up animations using WA-API on the next frame.
     requestAnimationFrame(() => {
@@ -682,13 +675,10 @@ async function doTransition() {
 }
 ```
 
-- `transition.setElement(element, tag, options)` - Same arguments as the MPA
-  API.
 - `transition.start(callback)` - Asynchornously capture any offered element as
   "outgoing". When finished, invoke the callback. When the callback finishes
   running, capture any new elements as "incoming". Match outgoing and incoming
   elements and begin transition.
-- `transition.ignoreCSSTaggedElements()` - Same as MPA API.
 - `transition.abandon()` - Same as MPA API.
 
 This API will also capture elements with `page-transition-tag`, so it's possible
@@ -699,9 +689,9 @@ document.createDocumentTransition(async (transition) => {
   transition.start(async () => { await coolFramework.changeTheDOMToPageB() });
 });
 ```
-
-Calling `setElement` before `start` means that element will be captured as both
-"outgoing". Calling it within the `start` callback will mark them as "incoming".
+Note that the `page-transition-tag` CSS property is consulted at the time
+`start` is called, as well as after the passed callback is finished running to
+determine the source and destination elements respectively.
 
 # Relation to `element()`
 
