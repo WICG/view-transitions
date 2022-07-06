@@ -232,47 +232,6 @@ Each captured element, along with the root, generates a subtree of pseudo elemen
 
 We plan to add a feature to allow one transition container to be nested within another, but that isn't currently implemented.
 
-## Animation synchronization gotcha
-
-Right now, there's a delay between Chrome creating the outgoing image element, and the incoming image element. That means the styles for the outgoing image element will apply sooner, which in turn means its animation will start sooner, and apply out of sync with the incoming image element.
-
-This is considered a [bug](https://bugs.chromium.org/p/chromium/issues/detail?id=1310798) (well, a design error), but you can work around it:
-
-```js
-async function spaNavigate(data) {
-  // Fallback
-  if (!document.createDocumentTransition) {
-    await updateTheDOMSomehow(data);
-    return;
-  }
-
-  // With a transition
-  const transition = document.createDocumentTransition();
-
-  // Add a temporary class:
-  document.documentElement.classList.add("transition-warming-up");
-
-  await transition.start(async () => {
-    await updateTheDOMSomehow(data);
-
-    // Now remove it:
-    document.documentElement.classList.remove("transition-warming-up");
-  });
-}
-```
-
-Then in the CSS:
-
-```css
-.transition-warming-up::page-transition-container(*),
-.transition-warming-up::page-transition-incoming-image(*),
-.transition-warming-up::page-transition-outgoing-image(*) {
-  animation-play-state: paused !important;
-}
-```
-
-This pauses the animations until both the outgoing and incoming content is ready.
-
 ## Using `object-fit` and `object-position`
 
 The default animation animates the `width` and `height` of the `::page-transition-container`, which is generally frowned upon in web performance circles, as it runs layout per frame. However, for page transitions, we plan to optimize it so it isn't an issue (it isn't optimized yet).
