@@ -1,8 +1,17 @@
 # Introduction
 
-Starting with Chrome 106, the `overflow` property is applied on the following elements: img, video and canvas. In earlier versions of Chrome, this property was ignored on these elements.
+Starting with Chrome 106, the following elements respect the `overflow` property: img, video and canvas. In earlier versions of Chrome, this property was ignored on these elements.
 
-This implies that an image which was earlier clipped to its content box can now draw outside those bounds. Common examples of CSS which can result in this are:
+This means that an image which was earlier clipped to its content box can now draw outside those bounds if specified to do so in a style sheet. The default browser style sheet applies the following default style to these elements:
+
+```css
+img {
+  overflow: clip;
+  overflow-clip-margin: content-box;
+}
+```
+
+Examples of CSS in a developer stylesheet which can override this behaviour are:
 
 ```css
 img {
@@ -13,7 +22,6 @@ img {
 }
 ```
 
-For example, if your page has the following CSS:
 
 ```css
 img {
@@ -26,7 +34,7 @@ img {
 
 # Solution
 
-If overridng the `overflow` property to `visible` is not intentional, inspect the CSS applied to the element via [devtools](https://developer.chrome.com/docs/devtools/css/#view). This should allow you to identify the CSS declaration whih is overriding the `overflow` property to `visible` and update it. Note that another common pattern that can update the `overflow` property is:
+If overridng the `overflow` property to `visible` is not intentional, inspect the CSS applied to the element via [devtools](https://developer.chrome.com/docs/devtools/css/#view). This should allow you to identify the CSS declaration which is overriding the `overflow` property to `visible` and update it to `clip` via an additional style sheet rule such as `#myImage { overflow:clip; }`. Note that another common pattern that can inadvertently cause `overflow` to be `visible` is:
 
 ```css
 img {
@@ -35,7 +43,7 @@ all: inherit;
 }
 ```
 
-If updating the CSS is not trivial, a trivial fix can be to add the following inline style to the element.
+If updating the CSS is not trivial, another fix is to add the following inline style to the element.
 
 ```html
 <img style="overflow:clip !important"></img>
