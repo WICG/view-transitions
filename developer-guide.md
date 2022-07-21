@@ -184,7 +184,7 @@ If you wanted the site header of your site to stay still during the slide transi
 ```css
 .site-header {
   page-transition-tag: side-header;
-  /* Paint containment is required */
+  /* Paint or layout containment is required */
   contain: paint;
 }
 ```
