@@ -98,13 +98,11 @@ https://user-images.githubusercontent.com/93594/141104275-6d1fb67a-2f73-41e4-9ce
 
 An element offered for a transition has the following restrictions:
 
-- [`contain: paint`](https://developer.mozilla.org/en-US/docs/Web/CSS/contain)
+- [`contain: paint` or `contain: layout`](https://developer.mozilla.org/en-US/docs/Web/CSS/contain)
   which ensures that the element is the containing block for all positioned
-  descendants and generates a stacking context. This implies that the child
-  content will be clipped to the context-box but it can be expanded using
-  ['overflow-clip-margin'](https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-clip-margin).
-  Being a stacking context and a containing block allows the element to be
-  treated as a single unit, whereas paint containment simplifies implementation.
+  descendants and generates a stacking context. Being a stacking context and a
+  containing block allows the element to be treated as a single unit, so
+  paint or layout containment simplifies implementation.
 - [`break-inside:
   avoid`](https://developer.mozilla.org/en-US/docs/Web/CSS/break-inside) which
   disallows fragmentation ensuring the element content is a single rect, i.e.,
