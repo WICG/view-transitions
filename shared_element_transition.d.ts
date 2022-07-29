@@ -1,4 +1,4 @@
-interface DocumentTransition {
+declare class DocumentTransition {
   start(callback: () => Promise<void> | void): Promise<void>;
   abandon(): void;
 }
