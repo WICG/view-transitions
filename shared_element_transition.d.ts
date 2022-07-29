@@ -10,3 +10,4 @@ interface DocumentTransition {
   interface CSSStyleDeclaration {
     pageTransitionTag: string;
   }
+  
