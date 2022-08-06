@@ -43,7 +43,7 @@ Shared element transitions are those where a specified element (one that exists 
 
 [![Video Link for Shared Element Transitions](https://img.youtube.com/vi/K7oVrXlVsgE/0.jpg)](https://www.youtube.com/watch?v=K7oVrXlVsgE)
 
-It is important to note that this API does not have a separate definition of root and shared element transitions, and that it is up to the developer to tag the desired elements and provide CSS for how to animate them. If the developer does not choose to customize the transition, the default will be animating the size and position of the two elements and crossfading between the before and after visuals. 
+It is important to note that this API does not have a separate definition of root and shared element transitions, and that it is up to the developer to tag the desired elements and provide CSS for how to animate them. If the developer does not choose to customize the transition, the default is to animate the size and position of the two elements and crossfade between the before and after visuals. 
 
 For more information on how this API works, please refer to the explainer [here](https://github.com/WICG/shared-element-transitions/blob/main/explainer.md). 
 
@@ -51,7 +51,7 @@ For more information on how this API works, please refer to the explainer [here]
 
 To get started with element transitions today, enable the API via chrome://flags/#document-transition.
 
-In order to use Shared Element transitions, first the developer must select the shared element. This will be the element that animates independently during the transition, and it will be captured as a single image (i.e. the captured painting of the element includes things that appear outside its bounding box like shadows, blurs, etc.). 
+In order to use Shared Element transitions, the developer must first select the shared element. This will be the element that animates independently during the transition, and it will be captured as a single image (i.e. the captured painting of the element includes things that appear outside its bounding box like shadows, blurs, etc.). 
 
 The captured elements are displayed using a tree of pseudo-elements, and are accessible to the developer to customize via CSS. If the developer does not choose to add customization, a default will occur where the size and position of the two elements are animated, and the before / after visuals are crossfaded into each other. 
 
