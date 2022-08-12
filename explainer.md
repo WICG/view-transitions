@@ -95,7 +95,7 @@ Where `name` is the `page-transition-tag` value, which is `root` for the root el
 
 These trees are inserted into a `::page-transition` pseudo element, according to the paint order of their transition elements.
 
-The `::page-transition` is rendered in a top-level stacking context, filling the viewport.
+The `::page-transition` pseudo element originates from the root element. It is rendered in a top-level stacking context, filling the viewport.
 
 Once this is in place, rendering is resumed, although the captured elements in the real DOM (beneath the `::page-transition`) are not rendered, as if `visibility: hidden; pointer-events: none`.
 
@@ -117,11 +117,11 @@ Default styles:
 
   /*= Styles generated per instance =*/
 
-  /* Dimensions of the outgoing element */
+  /* Dimensions of the incoming element */
   width: 665px;
   height: 54px;
 
-  /* A transform that places it in the viewport position of the outgoing element. */
+  /* A transform that places it in the viewport position of the incoming element. */
   transform: matrix(1, 0, 0, 1, 0, 0);
 
   writing-mode: horizontal-tb;
@@ -132,8 +132,18 @@ Default styles:
 
 Default animation:
 
-- Width and height animates to the dimensions of the incoming element.
-- Transform animates to a transform that places it in the viewport position of the incoming element.
+```css
+@keyframes page-transition-container-anim-main-header {
+  from {
+    /* Dimensions of the outgoing element */
+    width: 600px;
+    height: 40px;
+    
+    /* A transform that places it in the viewport position of the outgoing element. */
+    transform: matrix(2, 0, 0, 2, 0, 0);
+  }
+}
+```
 
 ## `::page-transition-image-wrapper(*)`
 
@@ -186,11 +196,23 @@ Note that the `block-size` of this element is auto, so it won't stretch the imag
 
 Default animation:
 
-- Opacity animates from 1 to 0.
+```css
+@keyframes page-transition-fade-out {
+  from {
+    opacity: 0;
+  }
+}
+```
 
 ## `::page-transition-incoming-image(*)`
 
-As above, but animates from opacity 0 to 1.
+```css
+@keyframes page-transition-fade-in {
+  to {
+    opacity: 0;
+  }
+}
+```
 
 # Ending the transition
 
@@ -474,8 +496,6 @@ Cross-origin transitions aren't yet defined, but are likely to be heavily restri
 
 # Interactivity and accessibility
 
-Page transitions are a purely visual affordance. In terms of interactivity, transition elements will behave like `div`s regardless of the original element.
-
-Developers could break this intent by adding interactivity directly to the transition element, e.g. by deliberately adding a `tabindex` attribute. But this isn't recommended.
-
-The page transition stage will be hidden from assistive technologies such as screen readers.
+- Page transitions are a purely visual affordance. In terms of interactivity, transition elements will behave like `div`s regardless of the original element. Developers could break this intent by adding interactivity directly to the transition element, e.g. by deliberately adding a `tabindex` attribute. But this isn't recommended.
+- The page transition stage will be hidden from assistive technologies such as screen readers.
+- The duration for which DOM rendering is suppressed, to allow an author to asynchronously switch to the new DOM, input processing is also paused. This is necessary since the visual state presented to the user is inconsistent with the DOM state used for hit-testing.
