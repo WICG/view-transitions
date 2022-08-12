@@ -267,7 +267,7 @@ However, if a transition cannot be created, the promise returned by `prepare()` 
 
 Since this feature is built on existing concepts such as pseudo-elements and CSS animations, tooling for this feature should fit in with existing developer tooling.
 
-In Chrome's experimental implementation, the pre-existing animation panel could be used to debug transitions, and the pseudo-elements were exposed in the elements panel.
+In Chrome's experimental implementation, the pre-existing animation panel could be used to debug transitions, and the pseudo-elements are exposed in the elements panel.
 
 https://user-images.githubusercontent.com/93594/184123157-f4b08032-3b4f-4ca3-8882-8bea0e944355.mp4
 
