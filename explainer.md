@@ -288,7 +288,7 @@ await transition.prepare(async () => {
 });
 ```
 
-`prepare()` is used to signal that the current state should be captured, and the promise returned by the promise signals when the new state can be captured, and the transition can begin. Making cross-document transitions work means replacing those moments with moments either side of a cross-document navigation.
+`prepare()` is used to signal that the current state should be captured, and the promise returned by the callback passed to the API signals when the new state can be captured, and the transition can begin. Making cross-document transitions work means replacing those events with implicit events on either side of a cross-document navigation.
 
 Here's a rough sketch (all API names used here are for entertainment purposes only):
 
