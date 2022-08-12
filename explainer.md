@@ -91,7 +91,7 @@ For each transitioning element (including the root), the following pseudo-elemen
 
 Where `name` is the `page-transition-tag` value, which is `root` for the root. If the transitioning element only existed on one side of the DOM change, then either the outgoing or incoming image will be missing.
 
-These trees are inserted into a `::page-transition` pseudo element, according to the render-order of their transition elements.
+These trees are inserted into a `::page-transition` pseudo element, according to the paint order of their transition elements.
 
 The `::page-transition` is rendered in a top-level, filling the viewport.
 
