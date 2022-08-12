@@ -93,7 +93,7 @@ Where `name` is the `page-transition-tag` value, which is `root` for the root. I
 
 These trees are inserted into a `::page-transition` pseudo element, according to the paint order of their transition elements.
 
-The `::page-transition` is rendered in a top-level, filling the viewport.
+The `::page-transition` is rendered in a top-level stacking context, filling the viewport.
 
 Once this is in place, rendering is resumed.
 
