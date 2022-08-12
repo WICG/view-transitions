@@ -273,7 +273,7 @@ https://user-images.githubusercontent.com/93594/184123157-f4b08032-3b4f-4ca3-888
 
 # Future work
 
-There are elements to this feature that we're actively thinking about, but aren't fully designed.
+There are parts to this feature that we're actively thinking about, but aren't fully designed.
 
 ## Cross-document same-origin transitions
 
