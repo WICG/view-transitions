@@ -230,7 +230,7 @@ As long as the framework provides a notification when the DOM is updated, which 
 
 # Animating with JavaScript
 
-The promise returned by `prepare()` fulfills when both states have been captures and the pseudo-element tree has been successfully built. This provides developers with a point where they can animate those pseudo-elements with the [Web Animation API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API).
+The promise returned by `prepare()` fulfills when both states have been captured and the pseudo-element tree has been successfully built. This provides developers with a point where they can animate those pseudo-elements with the [Web Animation API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Animations_API).
 
 https://user-images.githubusercontent.com/93594/184120371-678f58b3-d1f9-465b-978f-ee5eab73d120.mp4
 
