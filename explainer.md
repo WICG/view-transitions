@@ -74,7 +74,7 @@ For the outgoing state, the following is captured for each part:
 - A CSS transform that would place element from the layout viewport origin to its current quad.
 - An [`object-view-box`](https://drafts.csswg.org/css-images-4/#propdef-object-view-box) that coincides with the element's border box.
 
-The above is also captured for the incoming state, although the image of the element is 'live', as in it's connected to the representation currently in the DOM.
+The above is also captured for the incoming state, although the image and computed layout properties of the element are 'live', as in it's connected to the representation currently in the DOM.
 
 It's valid for some transition elements to only exist on one side of the DOM change.
 
