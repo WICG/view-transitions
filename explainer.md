@@ -69,7 +69,7 @@ _The above shows the parts of the page captured before and after the DOM change.
 
 For the outgoing state, the following is captured for each part:
 
-- An image of the element, including ink overflow if any. The browser may crop this to make efficient use of memory, and that cropping should be biased towards the viewport.
+- An image of the element, including ink overflow if any. The browser may crop this to make efficient use of memory, and that cropping should be biased towards the viewport. This image also excludes painting of any descendants with a page-transition-tag, as if they have `visibility: hidden`.
 - The layout dimensions.
 - A CSS transform that would place element from the layout viewport origin to its current quad.
 - An [`object-view-box`](https://drafts.csswg.org/css-images-4/#propdef-object-view-box) that coincides with the element's border box.
