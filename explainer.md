@@ -1,22 +1,24 @@
 # Introduction
 
+Typically, navigations on the web involve one document switching to another. Browsers try to [eliminate an intermediate flash-of-white](https://developer.chrome.com/blog/paint-holding/), but the switch between views is still sudden and abrupt.
+
+Smooth loading animations can lower the cognitive load by helping users [stay in context](https://www.smashingmagazine.com/2013/10/smart-transitions-in-user-experience-design/) as they navigate from Page-A to Page-B, and [reduce the perceived latency](https://wp-rocket.me/blog/perceived-performance-need-optimize/#:~:text=1.%20Use%20activity%20and%20progress%20indicators) of loading.
+
 https://user-images.githubusercontent.com/93594/184085118-65b33a92-272a-49f4-b3d6-50a8b8313567.mp4
 
-Page transitions not only look great, they also communicate direction of flow, and make it clear which elements are related from page to page. They can even happen during data fetching, leading to a faster perception of performance.
-
-On Single Page Apps (SPAs) developers can use animation tools such as [CSS transitions](https://developer.mozilla.org/docs/Web/CSS/CSS_Transitions/Using_CSS_transitions), [CSS animations](https://developer.mozilla.org/docs/Web/CSS/CSS_Animations/Using_CSS_animations), and the [Web Animation API](https://developer.mozilla.org/docs/Web/API/Web_Animations_API/Using_the_Web_Animations_API) to create transitions. However, it's not straight forward, mostly due to the period where both states need to exist in the DOM at the same time, so both can be partially visible (eg in a cross-fade). This creates issues with:
+On Single Page Apps (SPAs) developers can use animation tools such as [CSS transitions](https://developer.mozilla.org/docs/Web/CSS/CSS_Transitions/Using_CSS_transitions), [CSS animations](https://developer.mozilla.org/docs/Web/CSS/CSS_Animations/Using_CSS_animations), and the [Web Animation API](https://developer.mozilla.org/docs/Web/API/Web_Animations_API/Using_the_Web_Animations_API) to create transitions. However, it's not straight forward, mostly due to the period where both states exist in the DOM at the same time, so both can be partially visible (eg in a cross-fade). This creates issues with:
 
 - **Accessibility**: Having both states in the DOM at the same time can create a confusing experience for screen reader users. Juggling the DOM around for the sake of a transition doesn't play well with things like ARIA live regions.
 - **Usability**: The old DOM will continue to exist during the transition, leading to complications if the user manages to interact with that content (eg clicking buttons).
 - **Scroll handling**: If the root scroll position is different between the states, then the old/new content needs to be offset to compensate. This is a source of bugs in transition frameworks.
-- **CSS structure**: If, during the transition, one element transitions between containers, clipping such as `overflow: hidden` can get in the way. To work around this, developers tend to pop the element out to the `<body>` for the duration of the transition to avoid the clipping. This not only presents more accessibility issues, it also forces the developer to structure their CSS in a particular way, so the element retains the correct styling outside of its usual container.
+- **CSS structure**: If, during the transition, one element transitions between containers, clipping such as `overflow: hidden` can get in the way. To work around this, developers tend to pop the element out to the `<body>` for the duration of the transition, to avoid the clipping. This not only presents more accessibility issues, it also forces the developer to structure their CSS in a particular way, so the element retains the correct styling outside of its usual container.
 
 And of course, for regular cross-document navigations, creating a transition is currently impossible.
 
-The Shared Element Transition follows the trend of transition APIs on platforms like [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle)
+The Shared Element Transition feature follows the trend of transition APIs on platforms like [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle)
 and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions), by allowing developers to continue to update page state atomically (either through DOM changes or cross-document navigations), while defining highly tailored transitions between the two states.
 
-The [current spec](https://tabatkins.github.io/specs/css-shared-element-transitions/) and experimental implementation focuses on SPA transitions, although the model has been designed to also work with cross-document navigations. The specifics for cross-document navigations are covered later in this document.
+The [current spec](https://tabatkins.github.io/specs/css-shared-element-transitions/) and experimental implementation in Chrome (behind the `chrome://flags/#document-transition` flag) focuses on SPA transitions. However, the model has also been designed to work with cross-document navigations. The specifics for cross-document navigations are covered [later in this document](#cross-document-same-origin-transitions).
 
 # Preparing a transition
 
@@ -40,7 +42,7 @@ The developer also signals which parts of the page they wish to animate independ
 }
 ```
 
-_Independently transitioning elements needs to have `layout` or `paint` containment, and not-allow fragmentation, so the element can be captured as a single unit._
+_Independently transitioning elements needs to have `layout` or `paint` containment, and avoid fragmentation, so the element can be captured as a single unit._
 
 The callback passed to `prepare()` is called once the browser has captured the current state (at the end of the [next render steps](https://tabatkins.github.io/specs/css-shared-element-transitions/#ref-for-update-the-rendering)). At this point rendering is paused, so the developer can make the DOM change without the user seeing a flash of the new content. Once the promise returned by the `prepare()` callback fulfills, the browser captures the new state.
 
@@ -69,14 +71,14 @@ _The above shows the parts of the page captured before and after the DOM change.
 
 For the outgoing state, the following is captured for each part:
 
-- An image of the element, including ink overflow if any. The browser may crop this to make efficient use of memory, and that cropping should be biased towards the viewport. This image also excludes painting of any descendants with a page-transition-tag, as if they have `visibility: hidden`.
+- An image of the element, including ink overflow if any. The browser may crop this to make efficient use of memory. If cropping is performed, it should be biased towards the viewport. This image also excludes painting of any descendants with a page-transition-tag, as if they have `visibility: hidden`.
 - The layout dimensions.
-- A CSS transform that would place element from the layout viewport origin to its current quad.
+- A CSS transform that would place the element from the layout viewport origin to its current quad.
 - An [`object-view-box`](https://drafts.csswg.org/css-images-4/#propdef-object-view-box) that coincides with the element's border box.
 
 The above is also captured for the incoming state, although the image and computed layout properties of the element are 'live', as in it's connected to the representation currently in the DOM.
 
-It's valid for some transition elements to only exist on one side of the DOM change.
+It's valid for some transition elements to only exist on one side of the DOM change, such as a side-bar that doesn't exist on the outgoing page, but exists in the incoming page.
 
 ## Building the pseudo-element tree
 
@@ -89,13 +91,13 @@ For each transitioning element (including the root), the following pseudo-elemen
    └─ ::page-transition-incoming-image(name)
 ```
 
-Where `name` is the `page-transition-tag` value, which is `root` for the root. If the transitioning element only existed on one side of the DOM change, then either the outgoing or incoming image will be missing.
+Where `name` is the `page-transition-tag` value, which is `root` for the root element (this is done via a UA stylesheet, so it can be changed). If the transitioning element only existed on one side of the DOM change, then either the outgoing or incoming image will be missing.
 
 These trees are inserted into a `::page-transition` pseudo element, according to the paint order of their transition elements.
 
 The `::page-transition` is rendered in a top-level stacking context, filling the viewport.
 
-Once this is in place, rendering is resumed.
+Once this is in place, rendering is resumed, although the captured elements in the real DOM (beneath the `::page-transition`) are not rendered, as if `visibility: hidden; pointer-events: none`.
 
 # Default styles & animation
 
@@ -103,9 +105,30 @@ Once this is in place, rendering is resumed.
 
 Default styles:
 
-- Absolutely positioned to the top left of the parent.
-- Width and height of the outgoing element.
-- A transform that places it in the viewport position of the outgoing element.
+```css
+::page-transition-container(*) {
+  /*= Styles for every instance =*/
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  will-change: transform;
+  transform-origin: left top;
+  pointer-events: auto;
+
+  /*= Styles generated per instance =*/
+
+  /* Dimensions of the outgoing element */
+  width: 665px;
+  height: 54px;
+
+  /* A transform that places it in the viewport position of the outgoing element. */
+  transform: matrix(1, 0, 0, 1, 0, 0);
+
+  writing-mode: horizontal-tb;
+  animation: 0.25s ease 0s 1 normal both running
+    page-transition-container-anim-main-header;
+}
+```
 
 Default animation:
 
@@ -116,29 +139,54 @@ Default animation:
 
 Default styles:
 
-- Absolutely positioned with 0 inset.
-- `isolation: isolate` to aid with cross-fading.
+```css
+::page-transition-image-wrapper(*) {
+  /*= Styles for every instance =*/
+  position: absolute;
+  inset: 0px;
+
+  /*= Styles generated per instance =*/
+  /* Set if there's an outgoing and incoming image, to aid with cross-fading.
+     This is done conditionally as isolation has a performance cost. */
+  isolation: isolate;
+}
+```
 
 Default animation: none.
 
 ## `::page-transition-outgoing-image(*)`
 
-Default styles:
+This is a replaced element displaying the capture of the outgoing element, with a natural aspect ratio of the outgoing element.
 
-- A replaced element displaying the capture of the outgoing element, with a natural aspect ratio of the outgoing element.
-- Absolutely positioned to the inline & block start.
-- `mix-blend-mode: plus-lighter` to allow for a true cross-fade.
-- 100% block size
-- Auto inline size
-- The captured `object-view-box`
+```css
+::page-transition-outgoing-image(*) {
+  /*= Styles for every instance =*/
+  position: absolute;
+  inset-block-start: 0px;
+  inline-size: 100%;
+  block-size: auto;
+  will-change: opacity;
 
-The `object-view-box` allows the image to be the layout size of the element, but allow overflow (to accommodate ink-overflow) and underflow (cropping to save memory) in the image data.
+  /*= Styles generated per instance =*/
+
+  /* Set if there's an outgoing and incoming image, to aid with cross-fading.
+     This is done conditionally as isolation has a performance cost. */
+  mix-blend-mode: plus-lighter;
+
+  /* Allows the image to be the layout size of the element,
+     but allow overflow (to accommodate ink-overflow)
+     and underflow (cropping to save memory) in the image data. */
+  object-view-box: inset(0);
+
+  animation: 0.25s ease 0s 1 normal both running blink-page-transition-fade-out;
+}
+```
+
+Note that the `block-size` of this element is auto, so it won't stretch the image as the container changes height. The developer can change this if they wish.
 
 Default animation:
 
 - Opacity animates from 1 to 0.
-
-Note that the height of this element is auto, so it won't stretch the image as the container changes height. The developer can change this if they wish.
 
 ## `::page-transition-incoming-image(*)`
 
@@ -365,6 +413,16 @@ With this opt in, rather than the containers being siblings:
       └─ ::page-transition-image-wrapper(child-item)
          └─ …
 ```
+
+## More granular style capture
+
+By default, elements are captured as images. This means if a rounded box is transitioning into a different size box with the same border-radius, there'll be some imperfect scaling of the corners during the transition.
+
+This often isn't as bad as it sounds in practice, particularly in fast transitions. And, developers can build custom animations with clip-paths to work around the issue in some cases. However, we are considering a different opt-in capture mode, where the computed styles of the transition elements are captured, allowing for transitions that involve layout.
+
+In this mode, the _content_ of the element would still be an image, but the element itself would have things like the `border-radius` and `box-shadow` copied over, rather than being baked into an image.
+
+However, since these animations would involve layout, they would need to run on the main thread.
 
 ## Better pseudo-element selectors
 
