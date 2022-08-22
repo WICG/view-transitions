@@ -33,9 +33,9 @@ https://user-images.githubusercontent.com/93594/184085118-65b33a92-272a-49f4-b3d
 
 # Why do we need a new API for this?
 
-Typically, navigations on the web involve one document switching to another. Browsers try to [eliminate an intermediate flash-of-white](https://developer.chrome.com/blog/paint-holding/), but the switch between views is still sudden and abrupt. Until Shared Element Transitions, there was nothing developers could do about that, without switching to an SPA model. This feature provides a way to create an animated transition between two documents, without creating an overlap between the lifetime of each document.
+Typically, navigations on the web involve one document switching to another. Browsers try to [eliminate an intermediate flash-of-white](https://developer.chrome.com/blog/paint-holding/), but the switch between views is still sudden and abrupt. Until Shared Element Transitions, there was nothing developers could do about that without switching to an SPA model. This feature provides a way to create an animated transition between two documents, without creating an overlap between the lifetime of each document.
 
-Although switching to an SPA allows developers to create transitions using existing technologies, such as [CSS transitions](https://developer.mozilla.org/docs/Web/CSS/CSS_Transitions/Using_CSS_transitions), [CSS animations](https://developer.mozilla.org/docs/Web/CSS/CSS_Animations/Using_CSS_animations), and the [Web Animation API](https://developer.mozilla.org/docs/Web/API/Web_Animations_API/Using_the_Web_Animations_API), it's something most developers and frameworks avoid, because it's harder than it sounds.
+Although switching to an SPA allows developers to create transitions using existing technologies, such as [CSS transitions](https://developer.mozilla.org/docs/Web/CSS/CSS_Transitions/Using_CSS_transitions), [CSS animations](https://developer.mozilla.org/docs/Web/CSS/CSS_Animations/Using_CSS_animations), and the [Web Animation API](https://developer.mozilla.org/docs/Web/API/Web_Animations_API/Using_the_Web_Animations_API), it's something most developers and frameworks avoid, or only do in a limited fashion, because it's harder than it sounds.
 
 Let's take one of the simplest transitions: a block of content that cross-fades between states.
 
@@ -267,7 +267,7 @@ https://user-images.githubusercontent.com/93594/185897197-62e23bef-c198-4cd6-978
 
 The thumbnail now transitions into the main image. Even though they're conceptually (and literally) different elements, the transition API treats them as the same thing because they shared the same `page-transition-tag`.
 
-This is useful for cases like above where one element is 'turning into' another, but also cases where a framework creates a new `Element` for something, due to a virtual DOM diffing mismatch.
+This is useful for cases like above where one element is 'turning into' another, but also for cases where a framework creates a new `Element` for something even though it hasn't really changed, due to a virtual DOM diffing mismatch.
 
 Also, this model is _essential_ for MPA navigations, where all elements across the state-change will be different DOM elements.
 
@@ -275,7 +275,7 @@ Also, this model is _essential_ for MPA navigations, where all elements across t
 
 It's valid for some transition elements to only exist on one side of the DOM change, such as a side-bar that doesn't exist on the outgoing page, but exists in the incoming page.
 
-For example, if an element only exists in the 'after' state, then it won't have a `::page-transition-outgoing-image`, and its `::page-transition-container` won't animate by default.
+For example, if an element only exists in the 'after' state, then it won't have a `::page-transition-outgoing-image`, and its `::page-transition-container` won't animate by default, it'll start in its final position.
 
 # Customizing the transition based on the type of navigation
 
@@ -533,7 +533,7 @@ There are parts to this feature that we're actively thinking about, but aren't f
 
 ## Cross-document same-origin transitions
 
-Many developers are more excited about cross-document transitions than SPA transition. We've focused on SPA transitions as it's a slightly smaller problem, and easier to prototype. However, the model has been designed to work across documents.
+Many developers are more excited about cross-document transitions than SPA transitions. We've focused on SPA transitions as it's a slightly smaller problem, and easier to prototype. However, the model has been designed to work across documents.
 
 In the SPA API:
 
@@ -544,7 +544,7 @@ await transition.prepare(async () => {
 });
 ```
 
-`prepare()` is used to signal that the current state should be captured, and the promise returned by the callback passed to the API signals when the new state can be captured, and the transition can begin. Making cross-document transitions work means replacing those events with implicit events on either side of a cross-document navigation.
+`prepare()` is used to signal that the current state should be captured, and the promise returned by the callback passed to the API signals when the new state can be captured, and the transition can begin. Making cross-document transitions work means replacing this API with something that does the same job, but can span two documents.
 
 Here's a rough sketch (all API names used here are for entertainment purposes only):
 
