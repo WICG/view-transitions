@@ -217,7 +217,9 @@ This results in the following pseudo-element tree for the transition:
       └─ ::page-transition-incoming-image(header-text)
 ```
 
-And without any further customization, here's the result:
+The new pseudo-elements follow the same pattern as the first, but for a subset of the page. For instance, `::page-transition-outgoing-image(header-text)` is a 'screenshot' of the header text, and `::page-transition-incoming-image(header-text)` is a live representation of the new header text. Although, in this case, the header text images are identical, but the element has changed position.
+
+Without any further customization, here's the result:
 
 https://user-images.githubusercontent.com/93594/185895421-0131951f-c67b-4afc-97f8-44aa16cfbed7.mp4
 
