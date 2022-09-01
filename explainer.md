@@ -54,7 +54,7 @@ and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-t
 
 # MPA vs SPA solutions
 
-The [current spec](https://tabatkins.github.io/specs/css-shared-element-transitions/) and experimental implementation in Chrome (behind the `chrome://flags/#document-transition` flag) focuses on SPA transitions. However, the model has also been designed to work with cross-document navigations. The specifics for cross-document navigations are covered [later in this document](#cross-document-same-origin-transitions).
+The [current spec](https://drafts.csswg.org/css-shared-element-transitions-1/) and experimental implementation in Chrome (behind the `chrome://flags/#document-transition` flag) focuses on SPA transitions. However, the model has also been designed to work with cross-document navigations. The specifics for cross-document navigations are covered [later in this document](#cross-document-same-origin-transitions).
 
 This doesn't mean we consider the MPA solution less important. In fact, [developers have made it clear that it's more important](https://twitter.com/jaffathecake/status/1405573749911560196). We have focused on SPAs due to the ease of prototyping, so those APIs have had more development. However, the overall model has been designed to work for MPAs, with a slightly different API around it.
 
