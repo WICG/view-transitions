@@ -1,6 +1,6 @@
 # Introduction
 
-Starting with Chrome 106, the following elements respect the `overflow` property: img, video and canvas. In earlier versions of Chrome, this property was ignored on these elements.
+Starting with Chrome 107, the following elements respect the `overflow` property: img, video and canvas. In earlier versions of Chrome, this property was ignored on these elements.
 
 This means that an image which was earlier clipped to its content box can now draw outside those bounds if specified to do so in a style sheet. The default browser style sheet applies the following default style to these elements:
 
