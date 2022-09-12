@@ -34,7 +34,7 @@ img {
 
 # Solution
 
-If overridng the `overflow` property to `visible` is not intentional, inspect the CSS applied to the element via [devtools](https://developer.chrome.com/docs/devtools/css/#view). This should allow you to identify the CSS declaration which is overriding the `overflow` property to `visible` and update it to `clip` via an additional style sheet rule such as `#myImage { overflow:clip; }`. Note that another common pattern that can inadvertently cause `overflow` to be `visible` is:
+If overriding the `overflow` property to `visible` is not intentional, inspect the CSS applied to the element via [devtools](https://developer.chrome.com/docs/devtools/css/#view). This should allow you to identify the CSS declaration which is overriding the `overflow` property to `visible` and update it to `clip` via an additional style sheet rule such as `#myImage { overflow:clip; }`. Note that another common pattern that can inadvertently cause `overflow` to be `visible` is:
 
 ```css
 img {
