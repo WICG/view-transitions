@@ -10,7 +10,7 @@ element.createTransition({
 });
 ```
 
-The element becomes the scoped-transition-root for the transition. It's the element that will host the pseudo-element tree and page-transition-container sub-trees will be created for descendants that have a page-transition-tag. For example, the following page:
+The element becomes the **scoped-transition-root** for the transition. It's the element that will host the pseudo-element tree and page-transition-container sub-trees will be created for descendants that have a `page-transition-tag`. For example, the following page:
 
 ```html
 <style>
