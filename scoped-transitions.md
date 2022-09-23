@@ -1,6 +1,6 @@
 # Scoped Transitions
 
-This doc is a summary of early design explorations to scope transitions to a DOM sub-tree. It uses the pseudo-element tree to describe the UA generated tree to refer to the existing spec. But considerations for an alternate Shadow DOM implementation are covered in *TODO: add link to jake's doc*.
+This doc is a summary of early design explorations to scope transitions to a DOM sub-tree. It uses the pseudo-element tree to describe the UA generated tree to refer to the existing spec. A [separate doc considers an alternate Shadow DOM implementation](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing).
 
 The following is a rough API sketch for how a developer would trigger the transition rooted on an element (other than the document's root element).
 
