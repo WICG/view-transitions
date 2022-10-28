@@ -33,7 +33,7 @@ https://user-images.githubusercontent.com/93594/184085118-65b33a92-272a-49f4-b3d
 
 # Why do we need a new API for this?
 
-Typically, navigations on the web involve one document switching to another. Browsers try to [eliminate an intermediate flash-of-white](https://developer.chrome.com/blog/paint-holding/), but the switch between views is still sudden and abrupt. Until Shared Element Transitions, there was nothing developers could do about that without switching to an SPA model. This feature provides a way to create an animated transition between two documents, without creating an overlap between the lifetime of each document.
+Typically, navigations on the web involve one document switching to another. Browsers try to [eliminate an intermediate flash-of-white](https://developer.chrome.com/blog/paint-holding/), but the switch between views is still sudden and abrupt. Until View Transitions, there was nothing developers could do about that without switching to an SPA model. This feature provides a way to create an animated transition between two documents, without creating an overlap between the lifetime of each document.
 
 Although switching to an SPA allows developers to create transitions using existing technologies, such as [CSS transitions](https://developer.mozilla.org/docs/Web/CSS/CSS_Transitions/Using_CSS_transitions), [CSS animations](https://developer.mozilla.org/docs/Web/CSS/CSS_Animations/Using_CSS_animations), and the [Web Animation API](https://developer.mozilla.org/docs/Web/API/Web_Animations_API/Using_the_Web_Animations_API), it's something most developers and frameworks avoid, or only do in a limited fashion, because it's harder than it sounds.
 
@@ -60,7 +60,7 @@ This doesn't mean we consider the MPA solution less important. In fact, [develop
 
 # Revisiting the cross-fade example
 
-As described above, creating a cross-fade transition using existing platform features is more difficult than it sounds. Here's how to do it with Shared Element Transitions:
+As described above, creating a cross-fade transition using existing platform features is more difficult than it sounds. Here's how to do it with View Transitions:
 
 ```js
 function spaNavigate(data) {
@@ -178,7 +178,7 @@ Note: In this example, the animation always moves from right to left, which does
 
 In the previous demo, the whole page is involved in the shared axis transition. But that doesn't seem quite right for the heading, as it slides out just to slide back in again.
 
-To solve this, Shared Element Transitions allow you to extract parts of the page to animate independently, by assigning them a `page-transition-tag`:
+To solve this, View Transitions allow you to extract parts of the page to animate independently, by assigning them a `page-transition-tag`:
 
 ```css
 .header {
