@@ -3,7 +3,7 @@
 The [overflow](https://drafts.csswg.org/css-overflow/#propdef-overflow) CSS property allows an element to paint outside its bounds. This property is currently not supported for replaced elements other than [svg](https://developer.mozilla.org/en-US/docs/Web/SVG). This explainer outlines the motivation and details to support this for all replaced elements.
 
 ## Motivation
-The primary motivation for this change is [Shared Element Transitions](https://github.com/WICG/shared-element-transitions/blob/main/explainer.md). The feature recreates the visual rendering of a DOM element using a replaced element. The bounding box for the replaced element maps to the DOM element's border-box and the contents are a painted snapshot including the DOM element's layout and ink overflow. Since the snapshot can be larger than the replaced element's bounds, this requires enabling visible overflow on replaced elements.
+The primary motivation for this change is [View Transitions](https://github.com/WICG/view-transitions/blob/main/explainer.md). The feature recreates the visual rendering of a DOM element using a replaced element. The bounding box for the replaced element maps to the DOM element's border-box and the contents are a painted snapshot including the DOM element's layout and ink overflow. Since the snapshot can be larger than the replaced element's bounds, this requires enabling visible overflow on replaced elements.
 
 In addition, replaced elements currently clip to their content-box by default. This [issue](https://github.com/w3c/csswg-drafts/issues/7188) explains a case where the content needs to be clipped to the padding-box.
 
@@ -20,4 +20,4 @@ overflow: clip;
 overflow-clip-margin: content-box;
 ```
 
-Developers can override these to customize the behaviour as needed. The replaced elements created by Shared Element Transitions use `overflow: visible`.
+Developers can override these to customize the behaviour as needed. The replaced elements created by View Transitions use `overflow: visible`.
