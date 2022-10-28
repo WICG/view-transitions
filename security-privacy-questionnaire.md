@@ -1,12 +1,12 @@
 # [Self-Review Questionnaire: Security and Privacy](https://w3ctag.github.io/security-questionnaire/)
 
-This questionare covers the Shared/Root Element Transitions API ([explainer](https://github.com/WICG/shared-element-transitions)). Based on the [W3C TAG Self-Review Questionnaire: Security and Privacy](https://w3ctag.github.io/security-questionnaire/).
+This questionare covers the View Transitions API ([explainer](https://github.com/WICG/view-transitions)). Based on the [W3C TAG Self-Review Questionnaire: Security and Privacy](https://w3ctag.github.io/security-questionnaire/).
 
 #### 01. What information might this feature expose to Web sites or other parties, and for what purposes is that exposure necessary?
 
 With the current API, the developer is able to "prepare" a custom transition and is informed when that transition is ready (i.e., when the UA has, internally, captured the pre-transition visuals of the page). Upon receiving this notification, the page can then update itself to the new state.  The single-page API also notifies the site when the transition completes.
 
-Note that this review is limited to same-origin navigations but the following consideration is relevant for cross-site navigations. There is a question of whether both the source and destination site for the navigation need to opt-in to the API. We do not think that the API allows the source site to learn about content on the destination site, or vice versa, but this API does allow customization of the user experience when navigating between the two sites. The case that might be of the most concern is shared element transitions. Is it ok to show a smooth transition to a shared element (e.g. a hero image) on a destination site without that site explicitly opting into this behavior? We are currently planning an opt-out for the destination site, which is [the same as how scroll-to-text-fragment works](https://web.dev/text-fragments/#disabling-text-fragments).
+Note that this review is limited to same-origin navigations but the following consideration is relevant for cross-site navigations. There is a question of whether both the source and destination site for the navigation need to opt-in to the API. We do not think that the API allows the source site to learn about content on the destination site, or vice versa, but this API does allow customization of the user experience when navigating between the two sites. The case that might be of the most concern is transitions which tag non-root elements. Is it ok to show a smooth transition to a DOOM element (e.g. a hero image) on a destination site without that site explicitly opting into this behavior? We are currently planning an opt-out for the destination site, which is [the same as how scroll-to-text-fragment works](https://web.dev/text-fragments/#disabling-text-fragments).
 
 #### 02. Do features in your specification expose the minimum amount of information necessary to enable their intended uses?
 
