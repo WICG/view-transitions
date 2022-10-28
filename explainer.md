@@ -54,7 +54,7 @@ and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-t
 
 # MPA vs SPA solutions
 
-The [current spec](https://drafts.csswg.org/css-shared-element-transitions-1/) and experimental implementation in Chrome (behind the `chrome://flags/#document-transition` flag) focuses on SPA transitions. However, the model has also been designed to work with cross-document navigations. The specifics for cross-document navigations are covered [later in this document](#cross-document-same-origin-transitions).
+The [current spec](https://drafts.csswg.org/css-view-element-transitions-1/) and experimental implementation in Chrome (behind the `chrome://flags/#document-transition` flag) focuses on SPA transitions. However, the model has also been designed to work with cross-document navigations. The specifics for cross-document navigations are covered [later in this document](#cross-document-same-origin-transitions).
 
 This doesn't mean we consider the MPA solution less important. In fact, [developers have made it clear that it's more important](https://twitter.com/jaffathecake/status/1405573749911560196). We have focused on SPAs due to the ease of prototyping, so those APIs have had more development. However, the overall model has been designed to work for MPAs, with a slightly different API around it.
 
@@ -671,7 +671,7 @@ This will play well with CSS nesting:
 
 In the current design, the transition acts across the whole document. However, developers have expressed interest in using this system, but limited to a single element. For example, allowing two independent components to perform transitions.
 
-This is being discussed in https://github.com/WICG/shared-element-transitions/issues/52.
+This is being discussed in https://github.com/WICG/view-transitions/issues/52 and a rough proposal is [here](https://github.com/WICG/view-transitions/blob/main/scoped-transitions.md).
 
 # Security/Privacy considerations
 
