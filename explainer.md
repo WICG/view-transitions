@@ -49,7 +49,7 @@ And this is just a simple cross-fade. Things get an order of magnitude more comp
 
 If your site is an SPA, none of this is impossible, it's just _really hard_. With regular navigations (sometimes referred to as Multi-Page Apps, or MPAs), it is impossible.
 
-The Shared Element Transition feature follows the trend of transition APIs on platforms like [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle)
+The View Transitions feature follows the trend of transition APIs on platforms like [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle)
 and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions), by allowing developers to continue to update page state atomically (either through DOM changes or cross-document navigations), while defining highly tailored transitions between the two states.
 
 # MPA vs SPA solutions
