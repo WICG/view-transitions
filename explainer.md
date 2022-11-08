@@ -447,6 +447,10 @@ Issue: We'd likely need an API for the developer to control how much Document ne
 Issue: The browser defers painting the new Document until all render-blocked resources have been fetched or timed out.
        Do we need an explicit hook for when this is done or could the developer rely on existing `load` events to detect this?
        This would allow authors to add viewTransitionNames based on what the new Document's first paint would look like.
+       
+Issue: Since `viewtransitiononolddocument` is dispatched after redirects and only if the final URL is same-origin,
+        it allows the current Document to know whether the navigation eventually ended up on a cross-origin page. This likely doesn't
+        matter since the site could know this after the navigation anyway but knowing on the current page before the navigation commits is new.
 
 # Compatibility with existing developer tooling
 
