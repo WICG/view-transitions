@@ -343,7 +343,7 @@ https://user-images.githubusercontent.com/93594/184120371-678f58b3-d1f9-465b-978
 
 ## Cross-document same-origin transitions
 
-This section outlines the navigation specific aspects of the ViewTransition API. The rendering model for generating snapshots and dispalying them using a tree of targetable pseudo-elements is the same for both SPA/MPA.
+This section outlines the navigation specific aspects of the ViewTransition API. The rendering model for generating snapshots and displaying them using a tree of targetable pseudo-elements is the same for both SPA/MPA.
 
 ### Declarative opt-in to transitions
 
