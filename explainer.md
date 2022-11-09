@@ -315,11 +315,17 @@ async function spaNavigate(data) {
 
     updateTheDOMSomehow(data);
   });
-  
-  // Wait for all pseudo-elements to be generated.
+
+  animateTransition(transition);
+
+  // spaNavigate should resolve when the DOM updates,
+  // not when the transition finishes.
+  return transition.domUpdated;
+}
+
+async function animateTransition(transition) {
   await transition.ready;
 
-  // Animate the root's new image
   document.documentElement.animate(
     {
       clipPath: [
@@ -334,6 +340,8 @@ async function spaNavigate(data) {
       pseudoElement: "::view-transition-new(root)",
     }
   );
+
+  return transition.finished;
 }
 ```
 
@@ -341,11 +349,11 @@ And here's the result:
 
 https://user-images.githubusercontent.com/93594/184120371-678f58b3-d1f9-465b-978f-ee5eab73d120.mp4
 
-## Cross-document same-origin transitions
+# Cross-document same-origin transitions
 
 This section outlines the navigation specific aspects of the ViewTransition API. The rendering model for generating snapshots and displaying them using a tree of targetable pseudo-elements is the same for both SPA/MPA.
 
-### Declarative opt-in to transitions
+## Declarative opt-in to transitions
 
 The first step is to add a new meta tag to the old and new Documents. This tag indicates that the author wants to enable transitions for same-origin navigations to/from this Document.
 
@@ -369,53 +377,55 @@ The motivation for a declarative opt-in, instead of a script event, is:
 
 Issue: The meta tag can be used to opt-in to other navigation types going forward: same-document, same-site, etc.
 
-### Script Events
+Issue: This prevents the declaration being controlled by media queries, which feels important for `prefers-reduced-motion`.
+
+## Script events
 
 Script can be used to customize a transition based on the URL of the old/new Document; or the current state of the Document when the transition is initiated. The Document could've been updated since first old from user interaction.
 
-#### Script on Old Document
+### Script on old document
+
 ```js
-document.addEventListener("viewtransitiononolddocument", (event) => {
+document.addEventListener("crossdocumentviewtransitionoldcapture", (event) => {
   // Cancel the transition (based on new URL) if needed.
-  if (shouldNotTransition(event.url)) {
+  if (shouldNotTransition(event.toURL)) {
     event.preventDefault();
     return;
   }
-    
+
   // Set up names on elements based on the new URL.
-  if (shouldTagThumbnail(event.url))
+  if (shouldTagThumbnail(event.toURL)) {
     thumbnail.style.viewTransitionName = "full-embed";
-    
+  }
+
   // Add opaque contextual information to share with the new Document.
   // This must be [serializable object](https://developer.mozilla.org/en-US/docs/Glossary/Serializable_object).
-  event.context = createTransitionContext(event.url);
+  event.setInfo(createTransitionInfo(event.toURL));
 });
 ```
 
-#### Script on New Document
+### Script on new document
+
 ```js
 // This event must be registered before the `body` element is parsed.
-document.addEventListener("viewtransitiononnewdocument", (event) => {
+document.addEventListener("crossdocumentviewtransition", (event) => {
   // Cancel the transition (based on old URL) if needed.
-  if (shouldNotTransition(event.url)) {
+  if (shouldNotTransition(event.fromURL)) {
     event.preventDefault();
     return;
   }
-  
+
   // The `ViewTransitionNavigation` object associated with this transition.
   const transition = event.transition;
-  
-  // Retrieve the list of names captured on the old Document.
-  const oldNames = event.oldNames;
-  
+
   // Retrieve the context provided by the old Document.
   const context = event.context;
-  
+
   // Add render-blocking resources to delay the first paint and transition
   // start. This can be customized based on the old Document state when the
   // transition was initiated.
-  markRenderBlockingResources(oldNames, context);
-  
+  markRenderBlockingResources(context);
+
   // The `ready` promise resolves when the pseudo-elements have been generated
   // and can be used to customize animations via script.
   transition.ready.then(() => {
@@ -425,10 +435,7 @@ document.addEventListener("viewtransitiononnewdocument", (event) => {
          pseudoElement: "::view-transition-new(root)",
        }
     );
-  });
-  
-  // The `finished` promise resolves when all animations have been executed.
-  transition.finished.then(() => {
+
     // Remove viewTransitionNames tied to this transition.
     thumbnail.style.viewTransitionName = "none";
   });
@@ -437,20 +444,17 @@ document.addEventListener("viewtransitiononnewdocument", (event) => {
 
 This provides the same scripting points as the SPA API, allowing developers to set class names to tailor the animation to a particular type of navigation.
 
-Issue: Do we need better timing for viewtransitiononnewdocument event? Especially for Documents restored from BFCache.
+Issue: Event names are verbose. Bikeshedding needed.
 
-Issue: Customizing which resources are render-blocking in viewtransitiononnewdocument requires it to be dispatched before parsing `body`,
-       or explicitly allow render-blocking resources to be added until this event is dispatched.
-       
+Issue: Do we need better timing for `crossdocumentviewtransition` event? Especially for Documents restored from BFCache.
+
+Issue: Customizing which resources are render-blocking in `crossdocumentviewtransition` requires it to be dispatched before parsing `body`, or explicitly allow render-blocking resources to be added until this event is dispatched.
+
 Issue: We'd likely need an API for the developer to control how much Document needs to be fetched/parsed before the transition starts.
 
-Issue: The browser defers painting the new Document until all render-blocked resources have been fetched or timed out.
-       Do we need an explicit hook for when this is done or could the developer rely on existing `load` events to detect this?
-       This would allow authors to add viewTransitionNames based on what the new Document's first paint would look like.
-       
-Issue: Since `viewtransitiononolddocument` is dispatched after redirects and only if the final URL is same-origin,
-        it allows the current Document to know whether the navigation eventually ended up on a cross-origin page. This likely doesn't
-        matter since the site could know this after the navigation anyway but knowing on the current page before the navigation commits is new.
+Issue: The browser defers painting the new Document until all render-blocked resources have been fetched or timed out. Do we need an explicit hook for when this is done or could the developer rely on existing `load` events to detect this? This would allow authors to add viewTransitionNames based on what the new Document's first paint would look like.
+
+Issue: Since `crossdocumentviewtransitionoldcapture` is dispatched after redirects and only if the final URL is same-origin, it allows the current Document to know whether the navigation eventually ended up on a cross-origin page. This likely doesn't matter since the site could know this after the navigation anyway but knowing on the current page before the navigation commits is new.
 
 # Compatibility with existing developer tooling
 
