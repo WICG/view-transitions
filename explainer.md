@@ -381,7 +381,7 @@ Issue: This prevents the declaration being controlled by media queries, which fe
 
 ## Script events
 
-Script can be used to customize a transition based on the URL of the old/new Document; or the current state of the Document when the transition is initiated. The Document could've been updated since first old from user interaction.
+Script can be used to customize a transition based on the URL of the old/new Document; or the current state of the Document when the transition is initiated. The Document could've been updated since first lold from user interaction.
 
 ### Script on old document
 
@@ -419,12 +419,12 @@ document.addEventListener("crossdocumentviewtransition", (event) => {
   const transition = event.transition;
 
   // Retrieve the context provided by the old Document.
-  const context = event.context;
+  const info = event.info;
 
   // Add render-blocking resources to delay the first paint and transition
   // start. This can be customized based on the old Document state when the
   // transition was initiated.
-  markRenderBlockingResources(context);
+  markRenderBlockingResources(info);
 
   // The `ready` promise resolves when the pseudo-elements have been generated
   // and can be used to customize animations via script.
