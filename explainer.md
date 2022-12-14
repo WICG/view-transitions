@@ -474,7 +474,7 @@ document.startViewTransition(async () => {
 });
 ```
 
-However, the pattern above assumes the developer is in charge of DOM updates, which isn't the case with most web frameworks. To assess the compatibility of this API with frameworks, the [demo site featured in this explainer](https://http203-playlist.netlify.app/) was built using Preact, and uses a [React-style hook](https://github.com/jakearchibald/http203-playlist/blob/main/src/client/utils.ts#L11) to wrap the above API and make it usable with React/Preact.
+However, the pattern above assumes the developer is in charge of DOM updates, which isn't the case with most web frameworks. To assess the compatibility of this API with frameworks, the [demo site featured in this explainer](https://http203-playlist.netlify.app/) was built using Preact, and uses a [React-style hook](https://github.com/jakearchibald/http203-playlist/blob/main/src/shared/utils.ts#L53) to wrap the above API and make it usable with React/Preact.
 
 As long as the framework provides a notification when the DOM is updated, which they already do to allow custom handling of elements, the transition API can be made to work with the framework.
 
