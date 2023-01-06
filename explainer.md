@@ -439,6 +439,10 @@ document.addEventListener("crossdocumentviewtransition", (event) => {
     // Remove viewTransitionNames tied to this transition.
     thumbnail.style.viewTransitionName = "none";
   });
+  
+  // The `finished` promise resolves when all animations for the transition are
+  // finished or cancelled and the pseudo-elements have been removed.
+  transition.finished.then(() => { ... });
 });
 ```
 
