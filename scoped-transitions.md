@@ -5,10 +5,8 @@ This doc is a summary of early design explorations to scope transitions to a DOM
 The following is a rough API sketch for how a developer would trigger the transition rooted on an element (other than the document's root element).
 
 ```js
-element.createTransition({
-  updateDOM() {
-    /* … */
-  },
+element.startViewTransition(() => {
+  // Update the DOM somehow.
 });
 ```
 
@@ -52,7 +50,7 @@ Note: We will probably need to change the naming, as 'page-transition' doesn't w
 
 The algorithm for executing the transition is as follows:
 
-1. At the next rendering opportunity after `createTransition`, the browser saves the painted output and geometry information for each tagged element under scoped-transition-root. The details are described in [7.3.4](https://drafts.csswg.org/css-shared-element-transitions-1/#perform-an-outgoing-capture-algorithm) except transforms are computed relative to the element. A task is queued to dispatch the `updateDOM` callback after this step.
+1. At the next rendering opportunity after `createTransition`, the browser saves the painted output and geometry information for each tagged element under scoped-transition-root. The details are described in [7.3.4](https://drafts.csswg.org/css-shared-element-transitions-1/#perform-an-outgoing-capture-algorithm) except transforms are computed relative to the element. A task is queued to dispatch the `startViewTransition` callback after this step.
 
 2. For every subsequent rendering opportunity, the browser renders the sub-tree under scoped-transition-root using the cached output captured in step 1. This is done by generating the pseudo-element sub-tree (originating from scoped-transition-root) as described in [7.9](https://drafts.csswg.org/css-shared-element-transitions-1/#create-transition-pseudo-elements-algorithm) except only outgoing-image pseudo-elements are generated. See [Timing for generating pseudo elements](#timing-for-generating-pseudo-elements) for details.
 
@@ -69,7 +67,7 @@ The algorithm for executing the transition is as follows:
 
    If the scoped-transition-root is tagged, it's snapshot uses [content-capture](https://github.com/WICG/shared-element-transitions/blob/main/explainer.md#more-granular-style-capture) mode. This means that only the element's descendants (including both text and elements) are painted in the snapshot while box decorations (like border, box-shadow) continue to paint in the outer stacking context. See [root snapshot](#root-snapshot) for details.
 
-4. Once the `updateDOM` callback is finished, incoming-image pseudo-elements are added to the tree generated in step 2. Default animations are added as defined in [7.8](https://drafts.csswg.org/css-shared-element-transitions-1/#animate-a-page-transition-algorithm).
+4. Once the `startViewTransition` callback is finished, incoming-image pseudo-elements are added to the tree generated in step 2. Default animations are added as defined in [7.8](https://drafts.csswg.org/css-shared-element-transitions-1/#animate-a-page-transition-algorithm).
 
 ## Constraints
 
