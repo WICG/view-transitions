@@ -67,7 +67,7 @@ The algorithm for executing the transition is as follows:
 
    If the scoped-transition-root is tagged, it's snapshot uses [content-capture](https://github.com/WICG/shared-element-transitions/blob/main/explainer.md#more-granular-style-capture) mode. This means that only the element's descendants (including both text and elements) are painted in the snapshot while box decorations (like border, box-shadow) continue to paint in the outer stacking context. See [root snapshot](#root-snapshot) for details.
 
-4. Once the `startViewTransition` callback is finished, incoming-image pseudo-elements are added to the tree generated in step 2. Default animations are added as defined in [7.8](https://drafts.csswg.org/css-shared-element-transitions-1/#animate-a-page-transition-algorithm).
+4. Once the callback passed to `startViewTransition` is finished, incoming-image pseudo-elements are added to the tree generated in step 2. Default animations are added as defined in [7.8](https://drafts.csswg.org/css-shared-element-transitions-1/#animate-a-page-transition-algorithm).
 
 ## Constraints
 
