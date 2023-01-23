@@ -320,7 +320,7 @@ async function spaNavigate(data) {
 
   // spaNavigate should resolve when the DOM updates,
   // not when the transition finishes.
-  return transition.domUpdated;
+  return transition.updateCallbackDone;
 }
 
 async function animateTransition(transition) {
