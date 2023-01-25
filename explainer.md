@@ -18,7 +18,7 @@
 1. [Handling ink overflow](#handling-ink-overflow) - Dealing with things like box shadows.
 1. [Full default styles & animation](#full-default-styles--animation).
 1. [Future work](#future-work).
-   1. [Nested transition containers](#nested-transition-groups) - cases where the 'flattened' model isn't the best model.
+   1. [Nested transition Groups](#nested-transition-groups) - cases where the 'flattened' model isn't the best model.
    1. [More granular style capture](#more-granular-style-capture) - cases where images aren't enough.
    1. [Better pseudo-element selectors](#better-pseudo-element-selectors) - because right now they kinda suck.
    1. [Transitions targeted to a specific element](#transitions-targeted-to-a-specific-element) - transitions that aren't the whole 'page'.
@@ -660,7 +660,7 @@ Default animation:
 
 There are parts to this feature that we're actively thinking about, but aren't fully designed.
 
-## Nested transition containers
+## Nested transition groups
 
 In the current design, each `::view-transition-group` is a child of the `::view-transition`. This works really well in most cases, but not all:
 
