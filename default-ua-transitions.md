@@ -73,6 +73,7 @@ There is currently no way for a site author to indicate that the page has a cust
 ## Choosing between UA and Custom Transition
 This proposal provides authors control over whether a same-document navigation performs a UA transition. The base primitive is a setting called `same-document-ua-transition` with the following options:
 
+* `enable`: Enables UA transitions for all navigations.
 * `disable-atomic`: Disables UA transitions for atomic navigations.
 * `disable-swipe`: Disables UA transitions for swipe navigations.
 
@@ -134,7 +135,7 @@ A new CSS [at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule) as
 @same-document-ua-transition: disable-atomic;
 ```
 
-The default value for `same-document-ua-transition` is `auto` which does not disable any UA transitions.
+The default value for `same-document-ua-transition` is `enable` which does not disable any UA transitions.
 
 #### Option 2
 Extends the [at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/At-rule) in Option 1 to take a pair of from/to URLs:
