@@ -1,3 +1,21 @@
+# Contents
+- [Introduction](#introduction)
+- [Transition Cases](#transition-cases)
+- [Problem Statement](#problem-statement)
+- [Proposals](#proposals)
+  * [Choosing between UA and Custom Transition](#choosing-between-ua-and-custom-transition)
+    + [Default Value](#default-value)
+    + [Handling Swipes](#handling-swipes)
+    + [Global vs Navigation Based](#global-vs-navigation-based)
+    + [CSS API](#css-api)
+      - [Option 1](#option-1)
+      - [Option 2](#option-2)
+      - [Option 3](#option-3)
+  * [Detecting UA Transition](#detecting-ua-transition)
+- [Future Use-Cases](#future-use-cases)
+  * [Cross-Document Navigations](#cross-document-navigations)
+  * [Subframe Navigations](#subframe-navigations)
+
 # Introduction
 Smooth visual transitions as users navigate on the web can lower cognitive load by helping users stay in context. It can also provide a [visual cue](https://www.wired.com/2014/04/swipe-safari-ios-7/) about the destination before initiating the navigation. Both site authors and user-agents (UAs) add visual transitions to their navigations for these use-cases.
 
