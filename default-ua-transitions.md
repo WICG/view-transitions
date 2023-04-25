@@ -63,6 +63,10 @@ There is currently no way for a site author to indicate that the page has a cust
 
    * If the user navigates using a swipe from the edge (iOS) or 2 finger swipe (mac), the UA does a transition showing content of the back entry. The Document then receives a `popState` event for the navigation and performs another visual transition.
    
+   <p align="center">
+   <img src="https://github.com/WICG/view-transitions/blob/main/media/double-transition-example.gif?raw=true" alt="drawing" style="width:20vw;"/>
+   </p>
+   
    This has *compat risk* if the UA adds visual transitions for navigations which can be implicitly customized by the site author, i.e., same-document navigations. This is not a problem for cross-document navigations since customization requires UA primitives like [ViewTransitions](https://drafts.csswg.org/css-view-transitions-1/). The UA can use this to detect if there are custom transitions and give them precedence.
    
 * Sub-optimal user experience (UX): It's possible that the transition UX defined by the UA is not ideal given the DOM change associated with a navigation (e.g. scrolling to a different position in the same Document).
