@@ -62,7 +62,7 @@ See [w3c/csswg-drafts#8048](https://github.com/w3c/csswg-drafts/issues/8048).
 
 ### Capturing the old state
 
-The old state is captured right before the old document is hidden and a new one is shown.
+The pold state is captured](https://drafts.csswg.org/css-view-transitions-1/#capture-old-state-algorithm) right before the old document is hidden and a new one is shown.
 In the HTML spec that moment is defined [here](https://html.spec.whatwg.org/#populating-a-session-history-entry:loading-a-document).
 This can either happen during normal navigations, when the new document is about to be created,
 in Back/Forward cache navigations, or when activating a prerendered document.
@@ -79,7 +79,7 @@ exit transition at moments that should be late enough.
 
 ### Capturing the new state
 
-The new state is captured at the first [rendering opportunity](https://html.spec.whatwg.org/#rendering-opportunity)
+The [new state is captured](https://drafts.csswg.org/css-view-transitions-1/#capture-new-state-algorithm) at the first [rendering opportunity](https://html.spec.whatwg.org/#rendering-opportunity)
 of the new document. This allows the new document to use the
 [render-blocking mechanism](https://html.spec.whatwg.org/#render-blocking-mechanism) as a way to
 delay the transition.
