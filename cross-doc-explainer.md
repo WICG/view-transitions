@@ -64,7 +64,7 @@ Document.
 The old state is captured right before the old document is hidden and a new one is shown.
 In the HTML spec this is defined [here](https://html.spec.whatwg.org/#populating-a-session-history-entry:loading-a-document).
 This can either happen during normal navigations, when the new document is about to be created,
-in BFCache navigations, or when activating a prerendered document.
+in Back/Forward cache navigations, or when activating a prerendered document.
 
 Before creating the new document (or activating a cached/prerendered one), the UA would update the rendering and snapshot the old document, in the same manner a document is snapshotted for a same-document navigation.
 
