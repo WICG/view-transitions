@@ -55,8 +55,11 @@ Document.
 
 1. Using meta-tags prevents the declaration being controlled by media queries, which feels important for `prefers-reduced-motion`.
 
+## Lifecycle
 
-## Capturing the old state
+![Lifecycle chart for cross-document transitions](media/mpa-chart.svg)
+
+### Capturing the old state
 
 The old state is captured right before the old document is hidden and a new one is shown.
 In the HTML spec this is defined [here](https://html.spec.whatwg.org/#populating-a-session-history-entry:loading-a-document).
@@ -69,22 +72,19 @@ Note that currently there are no planned new events for the exit transition.
 The developer can use existing events like `navigate` or `click` to customize the
 exit transition at moments that should be late enough.
 
-## Capturing the new state
+#### Issues
+
+1. Should we enable skipping the transition on exit? This could be done on`pagehide`.
+
+### Capturing the new state
 
 The new state is captured at the first [rendering opportunity](https://html.spec.whatwg.org/#rendering-opportunity)
 of the new document. This allows the new document to use the
 [render-blocking mechanism](https://html.spec.whatwg.org/#render-blocking-mechanism) as a way to
 delay the transition.
 
-Note: In the future we might want to enable customizing this further, or to delay it with a direct
-JavaScript API.
-
-### Events & JavaScript API
-
 For most cases, opting in via the meta tag, styling with the pseudo-elements, and delaying the transition using the
-[render-blocking mechanism](https://html.spec.whatwg.org/#render-blocking-mechanism) should be sufficient.
-
-But there are certain cases where further customization is desired, for example:
+[render-blocking mechanism](https://html.spec.whatwg.org/#render-blocking-mechanism) should be sufficient. But there are certain cases where further customization is desired, for example:
 
 * Abort the transition if certain conditions apply.
 
