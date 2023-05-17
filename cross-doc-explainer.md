@@ -54,6 +54,7 @@ Document.
 1. The meta tag can be used to opt-in to other navigation types going forward: same-document, same-site, etc.
 
 1. Using meta-tags prevents the declaration being controlled by media queries, which feels important for `prefers-reduced-motion`.
+See [w3c/csswg-drafts#8048](https://github.com/w3c/csswg-drafts/issues/8048).
 
 ## Lifecycle
 
@@ -62,7 +63,7 @@ Document.
 ### Capturing the old state
 
 The old state is captured right before the old document is hidden and a new one is shown.
-In the HTML spec this is defined [here](https://html.spec.whatwg.org/#populating-a-session-history-entry:loading-a-document).
+In the HTML spec that moment is defined [here](https://html.spec.whatwg.org/#populating-a-session-history-entry:loading-a-document).
 This can either happen during normal navigations, when the new document is about to be created,
 in Back/Forward cache navigations, or when activating a prerendered document.
 
@@ -96,8 +97,7 @@ For most cases, opting in via the meta tag, styling with the pseudo-elements, an
 There are several options as to how to enable this:
 
 1. Fire an event right before the new document capture. This would be either right
-   before the first `requestAnimationFrame` callback, or after `pageshow` in the reactivation case. Potential name: `reveal`. Note that in the latter case, it's too late to delay the transition via the render-blocking mechanism. This event doesn't
-   have to be specific to transitions.
+   before the first `requestAnimationFrame` callback, or after `pageshow` in the reactivation case. Potential names: `reveal`, `beforepagetransition`. Note that in the latter case, it's too late to delay the transition via the render-blocking mechanism. This event doesn't have to be specific to transitions.
 
 1. Expose something like a `document.currentRevealTransition` or so that the script can
    query or skip. We might also want to enable delaying the transition with a promise,
