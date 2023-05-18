@@ -67,7 +67,7 @@ In the HTML spec that moment is defined [here](https://html.spec.whatwg.org/#pop
 This can either happen during normal navigations, when the new document is about to be created,
 in Back/Forward cache navigations, or when activating a prerendered document.
 
-Before creating the new document (or activating a cached/prerendered one), the UA would update the rendering and snapshot the old document, in the same manner a document is snapshotted for a same-document navigation.
+Before creating the new document (or activating a cached/prerendered one), the UA would [update the rendering](https://html.spec.whatwg.org/#update-the-rendering) and snapshot the old document, in the same manner a document is snapshotted for a same-document navigation.
 
 Note that currently there are no planned new events for the exit transition.
 The developer can use existing events like `navigate` or `click` to customize the
