@@ -28,8 +28,8 @@ the right JavaScript knobs for when the defaults are not enough.
 ## In a nutshell
 Documents declare that they support same-origin cross-document transitions, using a
 [meta tag](#opt-in). When a navigation between two such documents takes place (and has no
-cross-origin redirects in the middle), the state of the old document is captured, in the same
-manner as same-origin transitions. When the new document is ready for the transition (i.e., when all render-blocking resources are ready), the new state is captured,
+cross-origin redirects in the middle), the state of the old document is captured, using the
+[same algorithm](https://drafts.csswg.org/css-view-transitions-1/#capture-old-state-algorithm) used for same-document transitions. When the new document is ready for the transition (i.e., when all render-blocking resources are ready), the new state is captured,
 and the transition continues as if it was a same-document transition, with the appropriate pseudo-elements.
 
 The new document can customize the style of the animation using the same techniques available for same-document transitions.
@@ -107,8 +107,8 @@ There are several options as to how to enable this:
 
 1. Customizing which resources are render-blocking in `reveal` requires it to be dispatched before parsing `body`, or explicitly allow render-blocking resources to be added until this event is dispatched.
 
-1. We'd likely need an API for the developer to control how much Document needs to be fetched/parsed before the transition starts, or delay the capture with a promise.
+1. We'd likely need an API for the developer to control how much Document needs to be fetched/parsed before the transition starts, or delay the transition with a promise.
 
-1. The browser defers painting the new Document until all render-blocked resources have been fetched or timed out. Do we need an explicit hook for when this is done or could the developer rely on existing `load` events to detect this? This would allow authors to add viewTransitionNames based on what the new Document's first paint would look like.
+1. The browser defers painting the new Document until all render-blocked resources have been fetched or timed out. Do we need an explicit hook for when this is done or could the developer rely on existing `load` events of the resources to detect this? This would allow authors to add viewTransitionNames based on what the new Document's first paint would look like.
 
 1. Should we allow access to the transition once its started? Perhaps access to a [ViewTransition](https://drafts.csswg.org/css-view-transitions-1/#viewtransition) object or similar?.
