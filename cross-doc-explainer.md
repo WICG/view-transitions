@@ -2,19 +2,15 @@
 
 # Introduction
 
-Cross-document transitions are an extension of [same-document transitions](https://drafts.csswg.org/css-view-transitions-1/), adding the semantics necessary to display transitions when navigating
-across documents.
+Cross-document transitions are an extension to
+[same-document transitions](https://drafts.csswg.org/css-view-transitions-1/), adding the semantics
+necessary to display transitions when navigating across documents.
 
 ## Scope
-[The main explainer](explainer.md) already provides af detailed explanation about same-document
-view transitions. This document provides explanations about the additional semantics, and how
-cross-document transitions work.
-
-## Motivation
-
-While same-document transitions are useful in themselves and an important stepping stone, allowing
-cross-document transitions would unlock a capability that so far has been available only within the
-same document.
+[The main explainer](explainer.md) and the [`css-view-transitions-1` spec](https://drafts.csswg.org/css-view-transitions-1/)
+provide a detailed explanation about same-document view transitions. Most of that is applicable to
+cross-document transitions as well. This document provides explanations about the additional
+semantics, and how cross-document transitions work.
 
 # Design Principles
 
@@ -32,14 +28,17 @@ have the right CSS & JavaScript knobs for when the defaults are not enough.
 
 ## Same-origin
 
-Cross-document view transitions are only enabled for [same-origin](https://html.spec.whatwg.org/multipage/browsers.html#same-origin) navigations without a
+Cross-document view transitions are only enabled for
+[same-origin](https://html.spec.whatwg.org/multipage/browsers.html#same-origin) navigations without a
 [cross-origin redirect](https://html.spec.whatwg.org/#unloading-documents:was-created-via-cross-origin-redirects).
 In the future we could examine relaxing this restriction in some way to same-site navigations.
 
 # How it works
 
 ## In a nutshell
-Both the old and new document need to declare that a transition between them would be [coordinated](#declarative-coordination). If these conditions ar met, and this is a [same-origin](#same-origin) navigation without cross-origin redirects, the state of the old document is captured, using the
+Both the old and new document need to [declaratively opt-in](#declarative-opt-in) to the transition
+between them. If both opted in, and this is a [same-origin](#same-origin) navigation without
+cross-origin redirects, the state of the old document is captured, using the
 [same algorithm](https://drafts.csswg.org/css-view-transitions-1/#capture-old-state-algorithm) used
 for same-document transitions.
 
@@ -48,29 +47,37 @@ the document is no longer [render blocked](https://html.spec.whatwg.org/multipag
 or at the course of [reactivation](https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document) from prerendering/back-forward cache, the state of the new document is captured, also using the
 [equivalent algorithm](https://drafts.csswg.org/css-view-transitions-1/#capture-new-state-algorithm).
 
-If all conditions are met and both states are captured, the transition carries on to [update the pseudo element styles](https://drafts.csswg.org/css-view-transitions-1/#update-pseudo-element-styles) and display the animation, as if it was a same-document transition.
+If all conditions are met and both states are captured, the transition carries on to
+[update the pseudo element styles](https://drafts.csswg.org/css-view-transitions-1/#update-pseudo-element-styles)
+and display the animation, as if it was a same-document transition.
 
-The new document can customize the style of the animation using the same techniques available for same-document transitions.
-Both documents can interrupt the transition in different phases, or observe its completion.
+The new document can customize the style of the animation using the same techniques available for
+same-document transitions. Both documents can interrupt the transition in different phases, or
+observe its completion.
 
 So to support cross-document view transition, the following things need to be specified:
 
-1. A way for both documents to declare that they are [coordinated](#declarative-coordination).
-1. The [lifecycle](#lifecycle): the exact moments in which the states are captured, and potentially new events
-   that corresponds to those moments.
-1. A way to [observe](#javascript-observability) or skip a transition using JavaScript in both documents.
+1. A way for both documents to [opt in](#declarative-opt-in) to the transition.
+1. The [lifecycle](#lifecycle): the exact moments in which the states are captured, and potentially
+   fire [new events](#a-new-reveal-event) that corresponds to those moments.
+1. A way to [observe](#javascript-observability) or skip a transition using JavaScript in both
+   documents.
 
 
-## Declarative coordination
+## Declarative opt-in
 
 To enable cross-document transitions, the old and new documents need to be coordinated with each
-other - as in, the transition names in the old document match the ones in the new document and the effect of animating between them is desired. Otherwise, there could be a situation where two documents of the same origin define styles for same-document transitions independently, and enabling this feature would create an unintended transition between them.
+other - as in, the transition names in the old document match the ones in the new document and the
+effect of animating between them is intentional. Otherwise, there could be a situation where two
+documents of the same origin define styles for same-document transitions independently, and enabling
+this feature would create an unexpected transition between them.
 
-Note: This is not a problem in single-document transitions, as those are triggered imperitavely in
-the first place.
+This is an issue that is specific to cross-document transitions, as single-document transitions are
+triggered imperitavely in the first place.
 
-The minimal functional coordination would be that both sides globally opt-in to cross-document
+The minimal functional opt-in would be a global declaration that the document supports view
 transitions, e.g.:
+
 ```html
 <meta name="view-transitions" content="same-origin">
 ```
@@ -142,3 +149,7 @@ The new event would be fired at the first time the page ceases to be [render blo
 See whatwg/html#9315 and w3c/csswg-drafts#8805
 
 Related Issue: Do we want to enable delaying the transition with JavaScript? Maybe with a timeout? See w3c/csswg-drafts#8681
+
+# Further discussions
+
+See [the list of open issues labeled `css-view-transitions-2`](https://github.com/w3c/csswg-drafts/issues?q=css-view-transitions-2+label%3Acss-view-transitions-2) for the up-to-date list of issues.
