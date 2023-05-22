@@ -21,7 +21,7 @@ between an MPA architecture and an SPA architecture. The main building blocks of
 the way the states are captured, and the way the captured images are animated, should remain the
 same, as much as possible.
 
-## Declarative yes customizable
+## Declarative yet customizable
 
 Cross-document transitions should work automatically without JavaScript intervention, and should
 have the right CSS & JavaScript knobs for when the defaults are not enough.
@@ -73,7 +73,7 @@ documents of the same origin define styles for same-document transitions indepen
 this feature would create an unexpected transition between them.
 
 This is an issue that is specific to cross-document transitions, as single-document transitions are
-triggered imperitavely in the first place.
+triggered imperatively in the first place.
 
 The minimal functional opt-in would be a global declaration that the document supports view
 transitions, e.g.:
