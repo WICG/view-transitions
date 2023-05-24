@@ -111,7 +111,7 @@ in Back/Forward cache navigations, or when activating a prerendered document.
 Before creating the new document (or activating a cached/prerendered one), the UA would [update the rendering](https://html.spec.whatwg.org/#update-the-rendering) and snapshot the old document, in the same manner a document is snapshotted for a same-document navigation.
 
 The developer can use existing events like `navigate` (where available) or `click` to customize the
-exit transition at moments that should be late enough.
+elements which have a view-transition-name in the old Document.
 
 ### Capturing the new state
 
