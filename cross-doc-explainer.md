@@ -144,6 +144,8 @@ The proposal is to add a `document.activeViewTransition` property that would ret
 
 This would allow skipping the transition and observing when it's finished.
 
+Note: skipping a transition on `pagehide` is guaranteed to happen before the new document is activated.
+
 Note: some of the properties of `ViewTransition`, like [`updateCallbackDone`](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone) are not relevant to cross-document
 view transitions.
 
