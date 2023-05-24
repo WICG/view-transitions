@@ -113,6 +113,15 @@ Before creating the new document (or activating a cached/prerendered one), the U
 The developer can use existing events like `navigate` (where available) or `click` to customize the
 elements which have a view-transition-name in the old Document.
 
+Example:
+```js
+navigation.addEventListener("navigate", event => {
+  // Don't capture navigation-bar animation when navigating to home
+  if (!new URL(event.destination.url).pathname.startsWith("/home"))
+    navigationBar.viewTransitionName = "none";
+});
+```
+
 ### Capturing the new state
 
 The [new state is captured](https://drafts.csswg.org/css-view-transitions-1/#capture-new-state-algorithm) right before the first [rendering opportunity](https://html.spec.whatwg.org/#rendering-opportunity)
@@ -144,7 +153,10 @@ Since the new state is [captured](#capturing-the-new-state) at a very precise po
 might want to fire an event at that time, to let the new document make last-minute DOM changes
 before the new state is captured, e.g. change transition names based on which images are loaded.
 
-The new event would be fired at the first time the page ceases to be [render blocked](https://html.spec.whatwg.org/multipage/dom.html#render-blocked), and every time it is [reactivated](https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document). Such event is
+The new event would be fired at the first time the page ceases to be [render blocked](https://html.spec.whatwg.org/multipage/dom.html#render-blocked), and every time it is [reactivated](https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document).
+
+Note that this event is different from [`pageshow`](https://html.spec.whatwg.org/#event-pageshow) as
+in the newly initialized document `pageshow` is only fired once the document is fully loaded.
 
 See whatwg/html#9315 and w3c/csswg-drafts#8805
 
