@@ -166,4 +166,5 @@ Related Issue: Do we want to enable delaying the transition with JavaScript? May
 
 # Further discussions
 
-See [the list of open issues labeled `css-view-transitions-2`](https://github.com/w3c/csswg-drafts/issues?q=css-view-transitions-2+label%3Acss-view-transitions-2) for the up-to-date list of issues.
+See [the list of open issues labeled `css-view-transitions-2`](https://github.com/w3c/csswg-drafts/issues?q=css-view-transitions-2+label%3Acss-view-transitions-2) for the up-to-date list of issues, and w3c/csswg-drafts#8804 for the main discussion about
+cross-document transitions.
