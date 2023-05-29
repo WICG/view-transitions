@@ -152,8 +152,9 @@ gets render-unblocked for the first time, and right at reactivation.
 Note that this event is different from [`pageshow`](https://html.spec.whatwg.org/#event-pageshow) as
 in the newly initialized document `pageshow` is only fired once the document is fully loaded.
 
-1. Add an API that allows continuing a view transition, using the current state as the old state.
-See [here](https://github.com/w3c/csswg-drafts/issues/8682#issuecomment-1566142986).
+1. Find a solution that fits both cross-document and same-document transitions. For example, an API
+that allows continuing a view transition, using the current state as the old state, as described
+[here](https://github.com/w3c/csswg-drafts/issues/8682#issuecomment-1566142986).
 
 Note: skipping a transition on `pagehide` is guaranteed to happen before the new document is activated.
 
