@@ -18,20 +18,19 @@ semantics, and how cross-document transitions work.
 
 Developers shouldn't have to jump through hoops or rethink their transition design when switching
 between an MPA architecture and an SPA architecture. The main building blocks of the transition,
-the way the states are captured, and the way the captured images are animated, should remain the
-same, as much as possible.
+the way the states are captured, the way the captured images are animated, and the JavaScript API,should remain the same, as much as possible.
 
-## Declarative yet customizable
+## Declarative
 
-Cross-document transitions should work automatically without JavaScript intervention, and should
-have the right CSS & JavaScript knobs for when the defaults are not enough.
+Unlike same-origin transitions, Cross-document transitions should work automatically without JavaScript intervention. They should have the right CSS & JavaScript knobs for when the defaults are not enough.
 
-## Same-origin
+## Same-origin (for now)
 
 Cross-document view transitions are only enabled for
 [same-origin](https://html.spec.whatwg.org/multipage/browsers.html#same-origin) navigations without a
 [cross-origin redirect](https://html.spec.whatwg.org/#unloading-documents:was-created-via-cross-origin-redirects).
 In the future we could examine relaxing this restriction in some way to same-site navigations.
+Cross-site view transitions are a non-goal.
 
 # How it works
 
@@ -47,21 +46,19 @@ the document is no longer [render blocked](https://html.spec.whatwg.org/multipag
 or at the course of [reactivation](https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document) from prerendering/back-forward cache, the state of the new document is captured, also using the
 [equivalent algorithm](https://drafts.csswg.org/css-view-transitions-1/#capture-new-state-algorithm).
 
-If all conditions are met and both states are captured, the transition carries on to
-[update the pseudo element styles](https://drafts.csswg.org/css-view-transitions-1/#update-pseudo-element-styles)
-and display the animation, as if it was a same-document transition.
+If all conditions are met and both states are captured, the transition proceeds to
+[update the pseudo element styles](https://drafts.csswg.org/css-view-transitions-1/#update-pseudo-element-styles) and display the animation, as if it was a same-document transition.
 
-The new document can customize the style of the animation using the same techniques available for
-same-document transitions. Both documents can interrupt the transition in different phases, or
+The new document can customize the style of the animation using the same CSS techniques available
+for same-document transitions. Both documents can interrupt the transition in different phases, or
 observe its completion.
 
 So to support cross-document view transition, the following things need to be specified:
 
 1. A way for both documents to [opt in](#declarative-opt-in) to the transition.
-1. The [lifecycle](#lifecycle): the exact moments in which the states are captured, and potentially
-   fire [new events](#a-new-reveal-event) that corresponds to those moments.
-1. A way to [observe](#javascript-observability) or skip a transition using JavaScript in both
-   documents.
+1. The [lifecycle](#lifecycle): the exact moments in which the states are captured.
+1. A [JavaSript API](#javascript-api) to control the animation, equivalent to how same-document
+   animations can be controlled.
 
 
 ## Declarative opt-in
@@ -133,36 +130,32 @@ As shown in the chart above, that first rendering opportunity can come in two ca
 it's a newly initialized document that's no longer [render-blocked](https://html.spec.whatwg.org/multipage/dom.html#render-blocked), or it's a document that's been frozen due to back-forward cache
 or prerendered, and is now being activated.
 
-## JavaScript Observability
+Note: relying on the [render-blocking](https://html.spec.whatwg.org/multipage/dom.html#render-blocked) mechanism is limited, as only a limited set of elements participate in that
+mechanism. See [proposal to extend it](whatwg/html#9332).
 
-### `document.activeTransition`
+## JavaScript API
 
-In the same-document case, we gain access to a [`ViewTransition`](https://drafts.csswg.org/css-view-transitions-1/#viewtransition) object when we call [`startViewTransition()`](https://drafts.csswg.org/css-view-transitions-1/#ViewTransition-prepare). However, we don't have access to this
-object for a declarative cross-document transition.
+To fullfill the design principle of making cross-document transitions [compatible with same-document transitions](#compatible-with-same-document-transitions), cross-document transition need to be as
+customizable as same-document transitions, while allowing good defaults that work declaratively.
 
-The proposal is to add a `document.activeViewTransition` property that would return an active `ViewTransition` object when there is an active transition, either cross-document or same-document.
+Same document transitions can be programatically extended (until the [updateCallbackDone](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone) promise is fullfilled), [skipped](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-skiptransition), programatically animated using the [ready](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-ready) promise, and their [end time can be
+observed](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-finished).
 
-This would allow skipping the transition and observing when it's finished.
+To accomplish the same control and observability, the developer would need access to a
+[ViewTransition](https://drafts.csswg.org/css-view-transitions-1/#the-domtransition-interface)
+object. There are several ways to approach this, and this is an open issue:
+
+1. Expose it via `document.pendingViewTransition`. This would be available only before the document
+gets render-unblocked for the first time, and right at reactivation.
+
+1. Fire a special `reveal` event at both lifecycle moments, with a `ViewTransition` object. See whatwg/html#9315, w3c/csswg-drafts#8682, and w3c/csswg-drafts#8805. Note that this event is
+different from [`pageshow`](https://html.spec.whatwg.org/#event-pageshow) as in the newly
+initialized document `pageshow` is only fired once the document is fully loaded.
+
+1. Add an API that allows continuing a view transition, using the current state as the old state.
+See [here](https://github.com/w3c/csswg-drafts/issues/8682#issuecomment-1566142986).
 
 Note: skipping a transition on `pagehide` is guaranteed to happen before the new document is activated.
-
-Note: some of the properties of `ViewTransition`, like [`updateCallbackDone`](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone) are not relevant to cross-document
-view transitions.
-
-### A new (`reveal`?) event
-
-Since the new state is [captured](#capturing-the-new-state) at a very precise point in time, we
-might want to fire an event at that time, to let the new document make last-minute DOM changes
-before the new state is captured, e.g. change transition names based on which images are loaded.
-
-The new event would be fired at the first time the page ceases to be [render blocked](https://html.spec.whatwg.org/multipage/dom.html#render-blocked), and every time it is [reactivated](https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document).
-
-Note that this event is different from [`pageshow`](https://html.spec.whatwg.org/#event-pageshow) as
-in the newly initialized document `pageshow` is only fired once the document is fully loaded.
-
-See whatwg/html#9315 and w3c/csswg-drafts#8805
-
-Related Issue: Do we want to enable delaying the transition with JavaScript? Maybe with a timeout? See w3c/csswg-drafts#8681
 
 # Further discussions
 
