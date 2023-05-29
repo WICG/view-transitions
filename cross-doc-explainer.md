@@ -69,7 +69,7 @@ effect of animating between them is intentional. Otherwise, there could be a sit
 documents of the same origin define styles for same-document transitions independently, and enabling
 this feature would create an unexpected transition between them.
 
-This is an issue that is specific to cross-document transitions, as single-document transitions are
+This is an issue that is specific to cross-document transitions, as same-document transitions are
 triggered imperatively in the first place.
 
 The minimal functional opt-in would be a global declaration that the document supports view
