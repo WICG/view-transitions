@@ -143,7 +143,7 @@ observed](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-fi
 
 To accomplish the same control and observability, the developer would need access to a
 [ViewTransition](https://drafts.csswg.org/css-view-transitions-1/#the-domtransition-interface)
-object. There are several ways to approach this, and this is an open issue:
+object. There are several ways to approach this, and this is an open issue. For example:
 
 1. Expose it via `document.pendingViewTransition`. This would be available only before the document
 gets render-unblocked for the first time, and right at reactivation.
@@ -151,10 +151,6 @@ gets render-unblocked for the first time, and right at reactivation.
 1. Fire a special `reveal` event at both lifecycle moments, with a `ViewTransition` object. See [whatwg/html#9315](https://github.com/whatwg/html/issues/9315), w3c/csswg-drafts#8682, and w3c/csswg-drafts#8805.
 Note that this event is different from [`pageshow`](https://html.spec.whatwg.org/#event-pageshow) as
 in the newly initialized document `pageshow` is only fired once the document is fully loaded.
-
-1. Find a solution that fits both cross-document and same-document transitions. For example, an API
-that allows continuing a view transition, using the current state as the old state, as described
-[here](https://github.com/w3c/csswg-drafts/issues/8682#issuecomment-1566142986).
 
 Note: skipping a transition on `pagehide` is guaranteed to happen before the new document is activated.
 
