@@ -131,7 +131,7 @@ it's a newly initialized document that's no longer [render-blocked](https://html
 or prerendered, and is now being activated.
 
 Note: relying on the [render-blocking](https://html.spec.whatwg.org/multipage/dom.html#render-blocked) mechanism is limited, as only a limited set of elements participate in that
-mechanism. See [proposal to extend it](whatwg/html#9332).
+mechanism. See [proposal to extend it](https://github.com/whatwg/html/issues/9332).
 
 ## JavaScript API
 
