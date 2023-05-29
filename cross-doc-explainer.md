@@ -18,7 +18,7 @@ semantics, and how cross-document transitions work.
 
 Developers shouldn't have to jump through hoops or rethink their transition design when switching
 between an MPA architecture and an SPA architecture. The main building blocks of the transition,
-the way the states are captured, the way the captured images are animated, and the JavaScript API,should remain the same, as much as possible.
+the way the states are captured, the way the captured images are animated, and the JavaScript API, should remain the same, as much as possible.
 
 ## Declarative
 
