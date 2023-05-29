@@ -11,7 +11,6 @@
 1. [Transitioning elements don't need to exist in both states](#transitioning-elements-dont-need-to-exist-in-both-states).
 1. [Customizing the transition based on the type of navigation](#customizing-the-transition-based-on-the-type-of-navigation) - e.g. creating 'reverse' transitions for 'back' traversals.
 1. [Animating with JavaScript](#animating-with-javascript) - because some transitions aren't possible with CSS alone.
-1. [Cross-document same-origin transitions](#cross-document-same-origin-transitions) - MPA page transitions.
 1. [Compatibility with existing developer tooling](#compatibility-with-existing-developer-tooling).
 1. [Compatibility with frameworks](#compatibility-with-frameworks).
 1. [Error handling](#error-handling) - Ensuring DOM changes don't get lost, or stuck.
@@ -54,7 +53,7 @@ and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-t
 
 # MPA vs SPA solutions
 
-The [current spec](https://drafts.csswg.org/css-view-element-transitions-1/) and experimental implementation in Chrome (behind the `chrome://flags/#document-transition` flag) focuses on SPA transitions. However, the model has also been designed to work with cross-document navigations. The specifics for cross-document navigations are covered [later in this document](#cross-document-same-origin-transitions).
+The [current spec](https://drafts.csswg.org/css-view-element-transitions-1/) and implementation in Chrome focuses on SPA transitions. However, the model has also been designed to work with cross-document navigations. The specifics for cross-document navigations are covered [here](cross-doc-explainer.md).
 
 This doesn't mean we consider the MPA solution less important. In fact, [developers have made it clear that it's more important](https://twitter.com/jaffathecake/status/1405573749911560196). We have focused on SPAs due to the ease of prototyping, so those APIs have had more development. However, the overall model has been designed to work for MPAs, with a slightly different API around it.
 
@@ -351,114 +350,7 @@ https://user-images.githubusercontent.com/93594/184120371-678f58b3-d1f9-465b-978
 
 # Cross-document same-origin transitions
 
-This section outlines the navigation specific aspects of the ViewTransition API. The rendering model for generating snapshots and displaying them using a tree of targetable pseudo-elements is the same for both SPA/MPA.
-
-## Declarative opt-in to transitions
-
-The first step is to add a new meta tag to the old and new Documents. This tag indicates that the author wants to enable transitions for same-origin navigations to/from this Document.
-
-```html
-<meta name="view-transition" content="same-origin">
-```
-
-The above is equivalent to the browser implicitly executing the following script in the SPA API:
-
-```js
-document.startViewTransition(() => updateDOMToNewPage());
-```
-
-This results in a cross-fade between the 2 Documents from the default CSS set up by the browser. The transition executes only if this tag is present on both the old and new Documents. The tag must also be added before the body element is parsed.
-
-The motivation for a declarative opt-in, instead of a script event, is:
-
-* Enabling authors to define transitions with no script. If the transition doesn't need to be customized based on the old/new URL, it can be defined completely in CSS.
-
-* Avoiding undue latency in the critical path for browser initiated navigations like back/forward. We want to avoid dispatch of a script event for each of these navigations.
-
-Issue: The meta tag can be used to opt-in to other navigation types going forward: same-document, same-site, etc.
-
-Issue: This prevents the declaration being controlled by media queries, which feels important for `prefers-reduced-motion`.
-
-## Script events
-
-Script can be used to customize a transition based on the URL of the old/new Document; or the current state of the Document when the transition is initiated. The Document could've been updated since first lold from user interaction.
-
-### Script on old document
-
-```js
-document.addEventListener("crossdocumentviewtransitionoldcapture", (event) => {
-  // Cancel the transition (based on new URL) if needed.
-  if (shouldNotTransition(event.toURL)) {
-    event.preventDefault();
-    return;
-  }
-
-  // Set up names on elements based on the new URL.
-  if (shouldTagThumbnail(event.toURL)) {
-    thumbnail.style.viewTransitionName = "full-embed";
-  }
-
-  // Add opaque contextual information to share with the new Document.
-  // This must be [serializable object](https://developer.mozilla.org/en-US/docs/Glossary/Serializable_object).
-  event.setInfo(createTransitionInfo(event.toURL));
-});
-```
-
-### Script on new document
-
-```js
-// This event must be registered before the `body` element is parsed.
-document.addEventListener("crossdocumentviewtransition", (event) => {
-  // Cancel the transition (based on old URL) if needed.
-  if (shouldNotTransition(event.fromURL)) {
-    event.preventDefault();
-    return;
-  }
-
-  // The `ViewTransitionNavigation` object associated with this transition.
-  const transition = event.transition;
-
-  // Retrieve the context provided by the old Document.
-  const info = event.info;
-
-  // Add render-blocking resources to delay the first paint and transition
-  // start. This can be customized based on the old Document state when the
-  // transition was initiated.
-  markRenderBlockingResources(info);
-
-  // The `ready` promise resolves when the pseudo-elements have been generated
-  // and can be used to customize animations via script.
-  transition.ready.then(() => {
-    document.documentElement.animate(...,
-       {
-         // Specify which pseudo-element to animate
-         pseudoElement: "::view-transition-new(root)",
-       }
-    );
-
-    // Remove viewTransitionNames tied to this transition.
-    thumbnail.style.viewTransitionName = "none";
-  });
-  
-  // The `finished` promise resolves when all animations for the transition are
-  // finished or cancelled and the pseudo-elements have been removed.
-  transition.finished.then(() => { ... });
-});
-```
-
-This provides the same scripting points as the SPA API, allowing developers to set class names to tailor the animation to a particular type of navigation.
-
-Issue: Event names are verbose. Bikeshedding needed.
-
-Issue: Do we need better timing for `crossdocumentviewtransition` event? Especially for Documents restored from BFCache.
-
-Issue: Customizing which resources are render-blocking in `crossdocumentviewtransition` requires it to be dispatched before parsing `body`, or explicitly allow render-blocking resources to be added until this event is dispatched.
-
-Issue: We'd likely need an API for the developer to control how much Document needs to be fetched/parsed before the transition starts.
-
-Issue: The browser defers painting the new Document until all render-blocked resources have been fetched or timed out. Do we need an explicit hook for when this is done or could the developer rely on existing `load` events to detect this? This would allow authors to add viewTransitionNames based on what the new Document's first paint would look like.
-
-Issue: Since `crossdocumentviewtransitionoldcapture` is dispatched after redirects and only if the final URL is same-origin, it allows the current Document to know whether the navigation eventually ended up on a cross-origin page. This likely doesn't matter since the site could know this after the navigation anyway but knowing on the current page before the navigation commits is new.
+This section has moved to [its own explainer](cross-doc-explainer.md).
 
 # Compatibility with existing developer tooling
 
