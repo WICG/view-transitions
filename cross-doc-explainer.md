@@ -1,8 +1,8 @@
-# Contents
+# Cross Document View Transitions
 
 # Introduction
 
-Cross-document transitions are an extension to
+Cross-document View Transitions are an extension to
 [same-document transitions](https://drafts.csswg.org/css-view-transitions-1/), adding the semantics
 necessary to display transitions when navigating across documents.
 
