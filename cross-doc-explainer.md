@@ -147,8 +147,7 @@ See [whatwg/html#9315](https://github.com/whatwg/html/issues/9315), w3c/csswg-dr
 Note that this event is different from [`pageshow`](https://html.spec.whatwg.org/#event-pageshow) as
 in the newly initialized document `pageshow` is only fired once the document is fully loaded.
 
-A potential alternative would be to expose it via `document.activeViewTransition`. This would be available only before the document
-gets render-unblocked for the first time.
+A potential alternative would be to expose it via `document.activeViewTransition` or `document.pendingViewTransition`. This would be available only before the document gets render-unblocked for the first time or at reactivation. Currently not proposing this, as developers would have to remember to query for this both at initialization and reactivation, which could become a footgun.
 
 Note: skipping a transition on `pagehide` is guaranteed to happen before the new document is activated.
 
