@@ -76,7 +76,7 @@ The minimal functional opt-in would be a global declaration that the document su
 transitions, e.g.:
 
 ```html
-<meta name="view-transitions" content="same-origin">
+<meta name="view-transition" content="same-origin">
 ```
 
 though to make this fully expressive, e.g. opt in conditionally based on reduced-motion preferences,
