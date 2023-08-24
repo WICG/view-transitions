@@ -62,7 +62,7 @@ Add the [blocking attribute](https://html.spec.whatwg.org/#blocking-attributes) 
 
 The timing for when this attribute can block rendering for a Document is already well defined in [render-blocking mechanism](https://html.spec.whatwg.org/multipage/dom.html#render-blocking-mechanism). The user agent [unblocks rendering](https://html.spec.whatwg.org/multipage/dom.html#unblock-rendering) on this element when it's done parsing the document as defined [here](https://html.spec.whatwg.org/multipage/parsing.html#the-end).
 
-This approach neatly fits with the existing `blocking` primitive in html. The con is that while its trivial to block rendering until the full Document is parsed, more not-so-obvious code is needed to optimally block only on the minimal requisite set of elements. That makes it likely that authors will just block on full parsing since that will fix the correctness issues.
+This approach neatly fits with the existing `blocking` primitive in html. The con is that while its trivial to block rendering until the full Document is parsed, more not-so-obvious code is needed to optimally block only on the minimal requisite set of elements. That makes it likely that authors will just block on full parsing since that will be an easier fix to the correctness issue. This will degrade the overall user experience by delaying the first frame longer than necessary.
 
 ### Sample Code
 
@@ -116,17 +116,24 @@ This approach neatly fits with the existing `blocking` primitive in html. The co
 
 Add a new meta tag with the name `blocking-elements` and `content` attribute set to the list of [element IDs](https://dom.spec.whatwg.org/#concept-id) which must be parsed before rendering. `*` is a special keyword which implies every element should be blocking.
 
-Each Document has a render-blocking-until-parsed element ids set, initially empty. A Document is [render-blocked](https://html.spec.whatwg.org/#render-blocked) if this set is non-empty.
+Each Document has a render-blocking-until-parsed element ids set (initially empty) and a boolean blocked-until-full-parsing (initially false). A Document is [render-blocked](https://html.spec.whatwg.org/#render-blocked) if render-blocking-until-parsed element ids set is non-empty or blocked-until-full-parsing is true.
 
-- If the value of the `content` attribute changes, and the Document [allows adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), the render-blocking-until-parsed element ids is set to the new attribute value.
-   This means authors can run script to configure the list until the opening `<body>` tag is parsed (after which no new render blocking resources can be added).
+- If the value of the `content` attribute changes, and the Document [allows adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then:
+  - If the new attribute value is a comma separated list, the render-blocking-until-parsed element ids is set to the new attribute value and blocked-until-full-parsing is set to false.
+  - If the new attribute value is `*`, the render-blocking-until-parsed element ids is cleared and blocked-until-full-parsing is set to true.
 
-- If the value of the `content` attribute changes, and the Document **does not** [allow adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), render-blocking-until-parsed element ids is set to be an intersection of the existing value and the new attribute value.
+  This means authors can run script to configure the list until the opening `<body>` tag is parsed (after which no new render blocking resources can be added).
+
+- If the value of the `content` attribute changes, and the Document **does not** [allow adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then:
+
+  - If the new attribute value is a comma separated list, the render-blocking-until-parsed element ids is set to be an intersection of the existing value and the new attribute value and blocked-until-full-parsing is set to true.
+  - If the new attribute value is `*`, no change is made.
+
    This means authors can run script to remove render-blocking elements after the body tag is parsed but can't add more elements. This allows authors to implement their own timeout if needed.
 
 - Each time an element's ID value changes, the browser checks if the set of elements which have been completely parsed (i.e. the end tag has been parsed) include all IDs in the render-blocking-until-parsed element ids set. If yes, the render-blocking-until-parsed element ids set is cleared.
 
-The pro of this approach is that its easier to block on a specific set of elements, which makes it more likely that authors will consider partial blocking. The con is new syntax which requires defining subtle interactions (like script changing element IDs after parsing).
+The pro of this approach is that its easier to block on a specific set of elements, which makes it more likely that authors will consider partial blocking. The con is new syntax which requires defining subtle interactions (like script changing element IDs after parsing). Also, if the developer makes errors like a typo in the ID name or removing the element from the Document without updating the list, rendering will be blocked until full parsing is done. These errors can be surfaced on the console.
 
 ### Including Blocking Tokens
 A sub-proposal is for the `content` attribute to include both the list of element IDs and [blocking tokens](https://html.spec.whatwg.org/#possible-blocking-token). This would enable authors to specify which operation needs to be blocked on a set of elements, similar to controlling which operations are blocked on a particular resources. For example,
