@@ -30,13 +30,13 @@ Identifying all animations correctly requires the browser to render-block the ne
 
 There are a few other scenarios where a feature to control when the parser yields for rendering can be helpful:
 
-- Lower CLS: A stable layout of the DOM depends on both parsing the requisite DOM nodes and fetching relevant stylesheets. Without control over parsing, its likely that the browser does multiple renders with layout shifts as more of the DOM is parsed.
-Authors will sometimes use `display: none` or `opacity: 0` to hide the whole Document to prevent this.
+- Lower CLS: A stable layout of the DOM depends on both parsing the requisite DOM nodes and fetching relevant stylesheets. Without control over parsing, its possible that the browser does multiple renders with layout shifts as more of the DOM is parsed.
+Authors will sometimes initially set `display: none` or `opacity: 0` to hide the whole Document to prevent this, only showing it when enough of the Document is parsed.
 
 - Atomic rendering of semantic elements: A UI widget built using a DOM sub-tree might not make sense to render partially. Consider a menu where only half the buttons show up on first render. Authors could mark sections in the Document which semantically render one widget so the browser doesn't yield midway through parsing one widget.
 
 - Optimal Yielding: The browser may yield later than was necessary leading to rendering more what's required for above the fold content. A developer hint about a yielding trigger could imply the first frame has less DOM to parse, style, and layout. Browsers can optimize paint to be limited to onscreen content but the prior stages are executed over the entire DOM.
-However, its difficult for authors to know when the above-the-fold content ends given the varity of device form factors. It could also be served better by `content-visibility` which can optimize out style/layout for offscreen content.
+However, its difficult for authors to know when the above-the-fold content ends given the variety of device form factors. This situation could also be solved better by `content-visibility: auto` which can optimize out style/layout for offscreen content.
 
 These use-cases are not the primary problem targeted by this proposal, they are listed to evaluate whether the ability to block parsing should be limited to when the new Document will be displayed with a View Transition or all loads.
 
@@ -44,7 +44,7 @@ These use-cases are not the primary problem targeted by this proposal, they are 
 
 The set of elements which need to block rendering for View Transition depends on which Document the user is coming from. A real world example is as follows.
 
-The user is navigating between Documents of a site which has a header. This header can be scrolled offscreen by the user, so its not guarenteed to be onscreen when a navigation is initiated. The following cases are possible:
+The user is navigating between Documents of a site which has a header. This header can be scrolled offscreen by the user, so it's not guaranteed to be onscreen when a navigation is initiated. The following cases are possible:
 
 - The header was onscreen on the old Document and will be onscreen on the new Document. The author wants a morph animation which needs the header to be parsed before first render.
 
@@ -114,12 +114,12 @@ This approach neatly fits with the existing `blocking` primitive in html. The co
 
 ## Meta Tag with Blocking ElementIds
 
-Add a new meta tag with the name `blocking-elements` and `content` attribute set to the list of [element IDs](https://dom.spec.whatwg.org/#concept-id) which must be parsed before rendering. `*` is a special keyword which implies every ID should be blocking.
+Add a new meta tag with the name `blocking-elements` and `content` attribute set to the list of [element IDs](https://dom.spec.whatwg.org/#concept-id) which must be parsed before rendering. `*` is a special keyword which implies every element should be blocking.
 
 Each Document has a render-blocking-until-parsed element ids set, initially empty. A Document is [render-blocked](https://html.spec.whatwg.org/#render-blocked) if this set is non-empty.
 
 - If the value of the `content` attribute changes, and the Document [allows adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), the render-blocking-until-parsed element ids is set to the new attribute value.
-   This means authors can run script to configure the list until the body tag is parsed (after which no new render blocking resources can be added).
+   This means authors can run script to configure the list until the opening `<body>` tag is parsed (after which no new render blocking resources can be added).
 
 - If the value of the `content` attribute changes, and the Document **does not** [allow adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), render-blocking-until-parsed element ids is set to be an intersection of the existing value and the new attribute value.
    This means authors can run script to remove render-blocking elements after the body tag is parsed but can't add more elements. This allows authors to implement their own timeout if needed.
