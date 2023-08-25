@@ -135,6 +135,10 @@ Each Document has a render-blocking-until-parsed element ids set (initially empt
 
 The pro of this approach is that its easier to block on a specific set of elements, which makes it more likely that authors will consider partial blocking. The con is new syntax which requires defining subtle interactions (like script changing element IDs after parsing). Also, if the developer makes errors like a typo in the ID name or removing the element from the Document without updating the list, rendering will be blocked until full parsing is done. These errors can be surfaced on the console.
 
+### HTML Attributes vs Computed Style
+
+Blocking elements can be identified using HTML attributes (as proposed here) or computed style. For example, if the API is limited to View Transitions then we could use a list of `view-transition-name`s instead of Element IDs. HTML attributes are preferred because of ease of implementation. If elements are identified using computed style, then each time the parser yields the browser needs to resolve style to check if the required set of elements have been parsed. This approach can be considered if it will make the API easier for developers to adopt.
+
 ### Including Blocking Tokens
 A sub-proposal is for the `content` attribute to include both the list of element IDs and [blocking tokens](https://html.spec.whatwg.org/#possible-blocking-token). This would enable authors to specify which operation needs to be blocked on a set of elements, similar to controlling which operations are blocked on a particular resources. For example,
 
