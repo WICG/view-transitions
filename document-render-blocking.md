@@ -89,9 +89,11 @@ This approach neatly fits with the existing `blocking` primitive in html. The co
     }
   }
 
-  // The value returned by getState() is set by the old Document in
-  // the `navigate` event. It tracks whether the old Document add a
-  // `view-transition-name` to the header.
+  // The value returned by getState() is set by the old Document.
+  // For example, using IntersectionObserver.
+  //
+  // It tracks whether the old Document added a `view-transition-name`
+  // to the header based on its visibility.
   if (navigation.initialLoad.from().getState().morphHeader) {
     blockingElementIds.add("header-id");
   }
@@ -165,9 +167,11 @@ A sub-proposal is for the `content` attribute to include both the list of elemen
 <html>
 <meta id="foo" name="blocking-elements" content="">
 <script>
-  // The value returned by getState() is set by the old Document in
-  // the `navigate` event. It tracks whether the old Document add a
-  // `view-transition-name` to the header.
+  // The value returned by getState() is set by the old Document.
+  // For example, using IntersectionObserver.
+  //
+  // It tracks whether the old Document added a `view-transition-name`
+  // to the header based on its visibility.
   if (navigation.initialLoad.from().getState().morphHeader) {
     foo.content="header-id";
   }
