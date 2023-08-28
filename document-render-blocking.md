@@ -114,7 +114,7 @@ This approach neatly fits with the existing `blocking` primitive in html. The co
 </html>
 ```
 
-## Meta Tag with Blocking ElementIds
+## Meta Tag with Blocking Element Ids
 
 Add a new meta tag with the name `blocking-elements` and `content` attribute set to the list of [element IDs](https://dom.spec.whatwg.org/#concept-id) which must be parsed before rendering. `*` is a special keyword which implies every element should be blocking.
 
