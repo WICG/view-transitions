@@ -114,26 +114,37 @@ This approach neatly fits with the existing `blocking` primitive in html. The co
 </html>
 ```
 
-## Meta Tag with Blocking Element Ids
+## Blocking Element ID
 
-Add a new meta tag with the name `blocking-elements` and `content` attribute set to the list of [element IDs](https://dom.spec.whatwg.org/#concept-id) which must be parsed before rendering. `*` is a special keyword which implies every element should be blocking.
+Add a new [`link`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link) type to specify an identifier for the element which should be parsed before rendering starts. For example,
 
-Each Document has a render-blocking-until-parsed element ids set (initially empty) and a boolean blocked-until-full-parsing (initially false). A Document is [render-blocked](https://html.spec.whatwg.org/#render-blocked) if render-blocking-until-parsed element ids set is non-empty or blocked-until-full-parsing is true.
+```html
+<link rel=expect href=”#section3” blocking=”render” media=”prefers-reduced-motion: no-prefernce” />
+<link rel=expect href=”#section1” blocking=”render” />
+<body>
+ <div id="section1">
+  ...
+ </div>
+ <div id="section3">
+  ...
+ </div>
+ ...
+</body>
+```
 
-- If the value of the `content` attribute changes, and the Document [allows adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then:
-  - If the new attribute value is a comma separated list, the render-blocking-until-parsed element ids is set to the new attribute value and blocked-until-full-parsing is set to false.
-  - If the new attribute value is `*`, the render-blocking-until-parsed element ids is cleared and blocked-until-full-parsing is set to true.
+Each Document has a render-blocking-until-parsed [map](https://infra.spec.whatwg.org/#ordered-map) (initially empty) whose keys are the link element and the value is the href attribute, i.e., the [element id](https://dom.spec.whatwg.org/#ref-for-dom-element-id%E2%91%A0).
 
-  This means authors can run script to configure the list until the opening `<body>` tag is parsed (after which no new render blocking resources can be added).
+A Document is [render-blocked](https://html.spec.whatwg.org/#render-blocked) if render-blocking-until-parsed element IDs map is non-empty.
 
-- If the value of the `content` attribute changes, and the Document **does not** [allow adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then:
+- If the value of the `href` attribute changes, and the Document [allows adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then update render-blocking-until-parsed value associated with this link element.
 
-  - If the new attribute value is a comma separated list, the render-blocking-until-parsed element ids is set to be an intersection of the existing value and the new attribute value and blocked-until-full-parsing is set to true.
-  - If the new attribute value is `*`, no change is made.
+  This means authors can run script to configure the blocking elements until the opening `<body>` tag is parsed (after which no new render blocking resources can be added).
+
+- If the value of the `href` attribute changes, or the `link` element is removed, and the Document **does not** [allow adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then remove the `link` element from render-blocking-until-parsed.
 
    This means authors can run script to remove render-blocking elements after the body tag is parsed but can't add more elements. This allows authors to implement their own timeout if needed.
 
-- Each time an element's ID value changes, the browser checks if the set of elements which have been completely parsed (i.e. the end tag has been parsed) include all IDs in the render-blocking-until-parsed element ids set. If yes, the render-blocking-until-parsed element ids set is cleared.
+- Each time an element's end tag is parsed, or the element's ID value changes, the browser checks if the set of elements which have been completely parsed include all IDs in the render-blocking-until-parsed element ids set. If yes, the render-blocking-until-parsed element ids set is cleared.
 
 The pro of this approach is that its easier to block on a specific set of elements, which makes it more likely that authors will consider partial blocking. The con is new syntax which requires defining subtle interactions (like script changing element IDs after parsing). Also, if the developer makes errors like a typo in the ID name or removing the element from the Document without updating the list, rendering will be blocked until full parsing is done. These errors can be surfaced on the console.
 
@@ -141,31 +152,24 @@ The pro of this approach is that its easier to block on a specific set of elemen
 
 Blocking elements can be identified using HTML attributes (as proposed here) or computed style. For example, if the API is limited to View Transitions then we could use a list of `view-transition-name`s instead of Element IDs. HTML attributes are preferred because of ease of implementation. If elements are identified using computed style, then each time the parser yields the browser needs to resolve style to check if the required set of elements have been parsed. This approach can be considered if it will make the API easier for developers to adopt.
 
-### Including Blocking Tokens
-A sub-proposal is for the `content` attribute to include both the list of element IDs and [blocking tokens](https://html.spec.whatwg.org/#possible-blocking-token). This would enable authors to specify which operation needs to be blocked on a set of elements, similar to controlling which operations are blocked on a particular resources. For example,
-
-```html
-<meta name="blocking-elements" content="id1,id2;render">
-```
-
 ### Sample Code
 
 #### Block Rendering on Full Document Parsing
 
 ```html
-<html>
-<meta name="blocking-elements" content="*">
+<link rel=expect href=”#last” blocking=”render” />
 <body>
-…
+ <div id="section1">
+  ...
+ </div>
+ <div id="last"></div>
 </body>
-</html>
 ```
 
 #### Block Rendering on Partial Document Parsing
 
 ```html
 <html>
-<meta id="foo" name="blocking-elements" content="">
 <script>
   // The value returned by getState() is set by the old Document.
   // For example, using IntersectionObserver.
@@ -173,11 +177,13 @@ A sub-proposal is for the `content` attribute to include both the list of elemen
   // It tracks whether the old Document added a `view-transition-name`
   // to the header based on its visibility.
   if (navigation.initialLoad.from().getState().morphHeader) {
-    foo.content="header-id";
+    blocking = document.createElement("link");
+    blocking.rel = "expect";
+    blocking.href = "#header-id";
   }
 </script>
 <body>
-…
+...
 <div id="header-id">
   ...
 </div>
