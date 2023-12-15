@@ -119,8 +119,8 @@ This approach neatly fits with the existing `blocking` primitive in html. The co
 Add a new [`link`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link) type to specify an identifier for the element which should be parsed before rendering starts. For example,
 
 ```html
-<link rel=expect href=”#section3” blocking=”render” media=”prefers-reduced-motion: no-prefernce” />
-<link rel=expect href=”#section1” blocking=”render” />
+<link rel=expect href="#section3" blocking="render" media="prefers-reduced-motion: no-preference" />
+<link rel=expect href="#section1" blocking="render" />
 <body>
  <div id="section1">
   ...
@@ -157,7 +157,7 @@ Blocking elements can be identified using HTML attributes (as proposed here) or 
 #### Block Rendering on Full Document Parsing
 
 ```html
-<link rel=expect href=”#last” blocking=”render” />
+<link rel=expect href="#last" blocking="render" />
 <body>
  <div id="section1">
   ...
