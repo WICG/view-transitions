@@ -132,21 +132,23 @@ Add a new [`link`](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/lin
 </body>
 ```
 
-Each Document has a render-blocking-until-parsed [map](https://infra.spec.whatwg.org/#ordered-map) (initially empty) whose keys are the link element and the value is the href attribute, i.e., the [element id](https://dom.spec.whatwg.org/#ref-for-dom-element-id%E2%91%A0).
+Each Document has a render-blocking-until-parsed [map](https://infra.spec.whatwg.org/#ordered-map) (initially empty) whose keys are [element id](https://dom.spec.whatwg.org/#ref-for-dom-element-id%E2%91%A0) extracted from the href attribute (by dropping the leading '#') and value is a set of link elements referencing this id.
 
-A Document is [render-blocked](https://html.spec.whatwg.org/#render-blocked) if render-blocking-until-parsed element IDs map is non-empty.
+A Document is [render-blocked](https://html.spec.whatwg.org/#render-blocked) if render-blocking-until-parsed map is non-empty.
 
-- If the value of the `href` attribute changes, and the Document [allows adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then update render-blocking-until-parsed value associated with this link element.
+- If the value of the `href` attribute changes, and the Document [allows adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then update render-blocking-until-parsed map appropriately -- remove the link from the previous element's entry and add it to the new element's entry. This means authors can run script to configure the blocking elements until the opening `<body>` tag is parsed (after which no new render blocking resources can be added).
 
-  This means authors can run script to configure the blocking elements until the opening `<body>` tag is parsed (after which no new render blocking resources can be added).
-
-- If the value of the `href` attribute changes, or the `link` element is removed, and the Document **does not** [allow adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then remove the `link` element from render-blocking-until-parsed.
+- If the value of the `href` attribute changes, or the `link` element is removed, and the Document **does not** [allow adding render blocking elements](https://html.spec.whatwg.org/#allows-adding-render-blocking-elements), then remove the `link` element from render-blocking-until-parsed map.
 
    This means authors can run script to remove render-blocking elements after the body tag is parsed but can't add more elements. This allows authors to implement their own timeout if needed.
 
-- Each time an element's end tag is parsed, or the element's ID value changes, the browser checks if the set of elements which have been completely parsed include all IDs in the render-blocking-until-parsed element ids set. If yes, the render-blocking-until-parsed element ids set is cleared.
+- Each time an element's end tag is parsed, or the element's ID value changes, the browser removes the id from the render-blocking-until-parsed (old id in the changed value case).
 
+- When the document finishes parsing, the render-blocking-until-parsed map is cleared.
+  
 The pro of this approach is that its easier to block on a specific set of elements, which makes it more likely that authors will consider partial blocking. The con is new syntax which requires defining subtle interactions (like script changing element IDs after parsing). Also, if the developer makes errors like a typo in the ID name or removing the element from the Document without updating the list, rendering will be blocked until full parsing is done. These errors can be surfaced on the console.
+
+Note that this approach also supports media attributes on the link element, which only block rendering if the media matches. The media condition is checked at link parse time and any time the media attribute changes. Importantly, it is not checked if the value of the condition changes based on external factors (e.g. window resize).
 
 ### HTML Attributes vs Computed Style
 
