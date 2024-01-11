@@ -75,6 +75,10 @@ html[data-navigation-type=traverse] .welcome {
 }
 ```
 
+# Security & Privacy
+Since `navigation.activation` exposes information about a cross-document navigaiton, we have to make sure it doesn't expose any information that's not otherwise available.
+To do that, it follows the current protections of the navigation API: it only exposes the URL and session history index of the previous page if it's also available through the existing navigation API functions. The exception to this is `location.replace`, `navigation.activation` exposes the URL of a replaced entry, but only if it's same-origin as the document you're on (and not the initial `about:blank`).
+
 # Further discussions
 
 For further discussing the issue, please refer to the [HTML spec issue tracker](https://github.com/whatwg/html).
