@@ -22,7 +22,7 @@ the way the states are captured, the way the captured images are animated, and t
 
 ## Declarative
 
-Unlike same-origin transitions, Cross-document transitions should work automatically without JavaScript intervention. They should have the right CSS & JavaScript knobs for when the defaults are not enough.
+Unlike same-origin transitions, Cross-document transitions should work automatically without JavaScript intervention. They should provide the right CSS & JavaScript knobs for when the defaults are not enough.
 
 ## Same-origin (for now)
 
@@ -63,6 +63,10 @@ So to support cross-document view transition, the following things need to be sp
 
 ## Declarative opt-in
 
+w3c/csswg-drafts#8048  
+w3c/csswg-drafts#9534  
+w3c/csswg-drafts#8783
+
 To enable cross-document transitions, the old and new documents need to be coordinated with each
 other - as in, the transition names in the old document match the ones in the new document and the
 effect of animating between them is intentional. Otherwise, there could be a situation where two
@@ -73,25 +77,31 @@ This is an issue that is specific to cross-document transitions, as same-documen
 triggered imperatively in the first place.
 
 The minimal functional opt-in would be a global declaration that the document supports view
-transitions, e.g.:
-
-```html
-<meta name="view-transition" content="same-origin">
-```
-
-though to make this fully expressive, e.g. opt in conditionally based on reduced-motion preferences,
-versions, or URL patterns, this would need a more elaborate definition, e.g.:
+transitions:
 
 ```css
-@auto-view-transitions {
-   same-origin: enabled;
+@view-transition {
+   navigation: auto;
 }
 ```
 
-Note: The exact semantics of the conditional opt-in are TBD. See related open issues:
-* w3c/csswg-drafts#8048
-* w3c/csswg-drafts#8679
-* w3c/csswg-drafts#8683
+Opts a document in to transitions for navigations that are:
+  * push or replace, excluding reloads, and not from browser UI
+  * history traversal with user involvement
+
+`@view-transition` can be nested within conditional group rules to e.g.
+conditionally opt-out depending on reduced-motion preferences:
+
+```css
+@view-transition {
+   navigation: auto;
+}
+@media (prefers-reduced-motion) {
+  @view-transition {
+    navigation: none;
+  }
+}
+```
 
 ## Lifecycle
 
@@ -105,18 +115,6 @@ This can either happen during normal navigations, when the new document is about
 in Back/Forward cache navigations, or when activating a prerendered document.
 
 Before creating the new document (or activating a cached/prerendered one), the UA would [update the rendering](https://html.spec.whatwg.org/#update-the-rendering) and snapshot the old document, in the same manner a document is snapshotted for a same-document navigation.
-
-The developer can use existing events like `navigate` (where available) or `click` to customize the
-elements which have a view-transition-name in the old Document.
-
-Example:
-```js
-navigation.addEventListener("navigate", event => {
-  // Don't capture navigation-bar animation when navigating to home
-  if (!new URL(event.destination.url).pathname.startsWith("/home"))
-    navigationBar.viewTransitionName = "none";
-});
-```
 
 ### Capturing the new state
 
@@ -140,16 +138,62 @@ customizable as same-document transitions, while allowing good defaults that wor
 Same document transitions can be programatically extended (until the [updateCallbackDone](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-updatecallbackdone) promise is fullfilled), [skipped](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-skiptransition), programatically animated using the [ready](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-ready) promise, and their [end time can be
 observed](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-finished).
 
-To accomplish the same control and observability, the developer would need access to a
-[ViewTransition](https://drafts.csswg.org/css-view-transitions-1/#the-domtransition-interface)
-object. To achieve that, we propose to fire a `reveal` event at both lifecycle moments, with a `ViewTransition` object.
-See [whatwg/html#9315](https://github.com/whatwg/html/issues/9315), w3c/csswg-drafts#8682, and w3c/csswg-drafts#8805.
+To achieve the same level of control for cross document navigations we propose two new events, corresponding to last pre-snapshot moment in the old and new documents.
+
+### `pageconceal`
+
+whatwg/html#9702
+
+To allow customizing a view transition from the old document, fire a `pageconceal` event just before capturing snapshots on the outgoing document. This allows the author
+to customize or skip a view transition based on the final destination URL:
+
+Note: `event.activation` is a `NavigationActivation`, see the [NavigationActivation explainer](https://github.com/WICG/view-transitions/blob/main/navigation-activation-explainer.md).
+
+```js
+window.addEventListener("pageconceal", event => {
+  if (!event.viewTransition)
+    return;
+  const path = new URL(event.activation.entry).pathname;
+  if (path === '/logout') {
+    // No transition to logout page.
+    event.viewTransition.skipTransition();
+  } else if (path === '/home') {
+    // Don't capture navigation-bar animation when navigating to home.
+    navigationBar.viewTransitionName = "none";
+  }
+});
+```
+
+Reusing the `navigate` or `pagehide` events was considered. `navigate` doesn't work because it doesn't provide the final URL (after redirects), doesn't fire for all navigation types, and fires before the page would be frozen for snapshot capture. `pagehide` doesn't work because the capture needs to asynchronously update the rendering which shouldn't happen after `pagehide`.
+
+### `pagereveal`
+
+whatwg/html#9315  
+w3c/csswg-drafts#8682  
+w3c/csswg-drafts#8805
+
+To allow customizing a view transition from the new document, fire a `pagereveal` event at the first render opportunity when loading or activating (from BFCache/prerender) a document.
+If a view transition was started by the old document, `pagereveal` will provide the `ViewTransition` object.
+
 Note that this event is different from [`pageshow`](https://html.spec.whatwg.org/#event-pageshow) as
-in the newly initialized document `pageshow` is only fired once the document is fully loaded.
+a newly initialized document fires `pageshow` is only once the document is fully loaded.
 
-A potential alternative would be to expose it via `document.activeViewTransition` or `document.pendingViewTransition`. This would be available only before the document gets render-unblocked for the first time or at reactivation. Currently not proposing this, as developers would have to remember to query for this both at initialization and reactivation, which could become a footgun.
+A potential alternative would be to expose it via `document.activeViewTransition` or `document.pendingViewTransition`. This would be available only before the document gets render-unblocked for the first time or at reactivation. This was discarded in favor of `pagereveal` as developers would have to remember to query for this both at initialization and reactivation, which could become a footgun.
 
-Note: skipping a transition on `pagehide` is guaranteed to happen before the new document is activated.
+```js
+document.addEventListener("pagereveal", event => {
+   if (!event.viewTransition)
+      return;
+   const from_path = new URL(navigation.activation.from).pathname;
+   // Skip transitions from home
+   if (from_path === "/home")
+      event.viewTransition.skipTransition();
+   // Apply a different style when going "back"
+   const is_back = navigation.activation.navigationType === "traverse" &&
+      navigation.activation.entry?.index === (navigation.activation.from?.index - 1);
+   document.documentElement.classList.toggle("back-nav", is_back);
+});
+```
 
 # Further discussions
 
