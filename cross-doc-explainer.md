@@ -142,6 +142,8 @@ To achieve the same level of control for cross document navigations we propose t
 
 ### `pageconceal`
 
+_Note: Still under early consideration_
+
 whatwg/html#9702
 
 To allow customizing a view transition from the old document, fire a `pageconceal` event just before capturing snapshots on the outgoing document. This allows the author
