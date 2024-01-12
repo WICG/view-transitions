@@ -87,7 +87,7 @@ transitions:
 
 Opts a document in to transitions for navigations that are:
   * push or replace, excluding reloads, and not from browser UI
-  * history traversal with user involvement
+  * history traversal, with or without user involvement
 
 `@view-transition` can be nested within conditional group rules to e.g.
 conditionally opt-out depending on reduced-motion preferences:
