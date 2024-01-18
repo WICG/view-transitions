@@ -142,31 +142,7 @@ To achieve the same level of control for cross document navigations we propose t
 
 ### `pageconceal`
 
-_Note: Still under early consideration_
-
-whatwg/html#9702
-
-To allow customizing a view transition from the old document, fire a `pageconceal` event just before capturing snapshots on the outgoing document. This allows the author
-to customize or skip a view transition based on the final destination URL:
-
-Note: `event.activation` is a `NavigationActivation`, see the [NavigationActivation explainer](https://github.com/WICG/view-transitions/blob/main/navigation-activation-explainer.md).
-
-```js
-window.addEventListener("pageconceal", event => {
-  if (!event.viewTransition)
-    return;
-  const path = new URL(event.activation.entry).pathname;
-  if (path === '/logout') {
-    // No transition to logout page.
-    event.viewTransition.skipTransition();
-  } else if (path === '/home') {
-    // Don't capture navigation-bar animation when navigating to home.
-    navigationBar.viewTransitionName = "none";
-  }
-});
-```
-
-Reusing the `navigate` or `pagehide` events was considered. `navigate` doesn't work because it doesn't provide the final URL (after redirects), doesn't fire for all navigation types, and fires before the page would be frozen for snapshot capture. `pagehide` doesn't work because the capture needs to asynchronously update the rendering which shouldn't happen after `pagehide`.
+Authors need some point in an outgoing document to customize or stop a transition. It's possible we may need a new event here but this is still under consideration, see whatwg/html#9702.
 
 ### `pagereveal`
 
