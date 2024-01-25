@@ -142,21 +142,50 @@ To achieve the same level of control for cross document navigations we propose t
 
 ### `pageconceal`
 
-Authors need some point in an outgoing document to customize or stop a transition. It's possible we may need a new event here but this is still under consideration, see whatwg/html#9702.
+Authors need some point in an outgoing document to customize or skip the cross-document transition.
+
+The current proposed event at whatwg/html#9702 is `pageconceal`. This event is fired when a
+document is about to be unloaded due to a navigation, and contains the origin-accessible activation info for the next document. If this a navigation that triggers a view-transition due to a `@view-transition` rule, the event's `viewTransition` property would be a `ViewTransition` object (otherwise it will be null).
+
+Note that this event is different from [`pagehide`](https://html.spec.whatwg.org/multipage/#event-pagehide)
+in the case where a view-transition is present. In that case, `pageconceal` would be fired before the document is hidden, deferring the activation the new document in favor of a final rendering update to capture the old state for the view-transition.
+
+When the navigation is not eligible for view-transitions (it's cross-origin, or its navigation type doesn't match the `@view-transition` rule), `pageconceal` is fired right before `pagehide`, but only for the navigating document. Its iframes, or documents that are unloaded without a navigation, don't receive a
+`pageconceal` event.
+
+A `pageconceal` event has a [`NavigationActivation`](https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigation-activation-interface) property `activation`. This is handy for making decisions about skipping/customizing the transition based on the old/new URL or navigation type. Note that the new URL here
+is the final URL after redirects.
+
+```js
+document.addEventListener("pageconceal", event => {
+   if (!event.viewTransition) {
+      return;
+   }
+   const from_path = new URL(event.activation.from).pathname;
+   const to_path = new URL(event.activation.entry).pathname;
+   // Skip transitions from landing home
+   if (from_path === "/landing" && to_path === "/home")
+      event.viewTransition.skipTransition();
+   // Apply a different style when going "back"
+   const is_back = event.activation.navigationType === "traverse" &&
+      event.activation.entry?.index === (event.activation.from?.index - 1);
+
+   // Note that this would only apply to capturing the final state of the old document,
+   // The new document would have to do this or something similar in `pagereveal`.
+   document.documentElement.classList.toggle("back-nav", is_back);
+});
+```
+
+See ongoing discussion at whatwg/html#9702.
 
 ### `pagereveal`
-
-whatwg/html#9315  
-w3c/csswg-drafts#8682  
-w3c/csswg-drafts#8805
+See [revealing the document](https://html.spec.whatwg.org/multipage/#revealing-the-document) in the HTML spec.
 
 To allow customizing a view transition from the new document, fire a `pagereveal` event at the first render opportunity when loading or activating (from BFCache/prerender) a document.
 If a view transition was started by the old document, `pagereveal` will provide the `ViewTransition` object.
 
-Note that this event is different from [`pageshow`](https://html.spec.whatwg.org/#event-pageshow) as
+Note that this event is different from [`pageshow`](https://html.spec.whatwg.org/multipage/#event-pageshow) as
 a newly initialized document fires `pageshow` is only once the document is fully loaded.
-
-A potential alternative would be to expose it via `document.activeViewTransition` or `document.pendingViewTransition`. This would be available only before the document gets render-unblocked for the first time or at reactivation. This was discarded in favor of `pagereveal` as developers would have to remember to query for this both at initialization and reactivation, which could become a footgun.
 
 ```js
 document.addEventListener("pagereveal", event => {
