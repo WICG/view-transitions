@@ -145,7 +145,7 @@ To achieve the same level of control for cross document navigations we propose t
 Authors need some point in an outgoing document to customize or skip the cross-document transition.
 
 The current proposed event at whatwg/html#9702 is `pageconceal`. This event is fired when a
-document is about to be unloaded due to a navigation, and contains the origin-accessible activation info for the next document. If this a navigation that triggers a view-transition due to a `@view-transition` rule, the event's `viewTransition` property would be a `ViewTransition` object (otherwise it will be null).
+document is about to be unloaded due to a navigation, and contains the origin-accessible activation info for the next document. If this navigation triggers a view-transition due to a `@view-transition` rule, the event's `viewTransition` property would be a `ViewTransition` object (otherwise it will be null).
 
 Note that this event is different from [`pagehide`](https://html.spec.whatwg.org/multipage/#event-pagehide)
 in the case where a view-transition is present. In that case, `pageconceal` would be fired before the document is hidden, deferring the activation the new document in favor of a final rendering update to capture the old state for the view-transition.
