@@ -148,7 +148,7 @@ The current proposed event at whatwg/html#9702 is `pageconceal`. This event is f
 document is about to be unloaded due to a navigation, and contains the origin-accessible activation info for the next document. If this navigation triggers a view-transition due to a `@view-transition` rule, the event's `viewTransition` property would be a `ViewTransition` object (otherwise it will be null).
 
 Note that this event is different from [`pagehide`](https://html.spec.whatwg.org/multipage/#event-pagehide)
-in the case where a view-transition is present. In that case, `pageconceal` would be fired before the document is hidden, deferring the activation the new document in favor of a final rendering update to capture the old state for the view-transition.
+in the case where a view-transition is present. In that case, `pageconceal` would be fired before the document is hidden, deferring activation of the new document in favor of a final rendering update to capture the old state for the view-transition.
 
 When the navigation is not eligible for view-transitions (it's cross-origin, or its navigation type doesn't match the `@view-transition` rule), `pageconceal` is fired right before `pagehide`, but only for the navigating document. Its iframes, or documents that are unloaded without a navigation, don't receive a
 `pageconceal` event.
