@@ -64,6 +64,12 @@ The timing for when this attribute can block rendering for a Document is already
 
 This approach neatly fits with the existing `blocking` primitive in html. The con is that while its trivial to block rendering until the full Document is parsed, more not-so-obvious code is needed to optimally block only on the minimal requisite set of elements. That makes it likely that authors will just block on full parsing since that will be an easier fix to the correctness issue. This will degrade the overall user experience by delaying the first frame longer than necessary.
 
+This approach was discarded in favour of [Blocking Element Id](#blocking-element-id) for 2 reasons:
+
+- A declarative API shape: Say your page is built with multiple components managed by different teams. Its easier to add an ID to a list than to ensure that the `blocking` attribute is removed correctly (for partial blocking) each time the set of blocking elements needs to change. Authors would end up polyfilling the Blocking Element ID approach, see "Block Rendering on Partial Document Parsing" example below.
+
+- Partial blocking first: The API should make it trivial to block on parsing a subset of the page instead of the entire page. Without that, authors may not try to optimize and do the easier thing of blocking on the entire page.
+
 ### Sample Code
 
 #### Block Rendering on Full Document Parsing
