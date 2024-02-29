@@ -140,24 +140,23 @@ observed](https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-fi
 
 To achieve the same level of control for cross document navigations we propose two new events, corresponding to last pre-snapshot moment in the old and new documents.
 
-### `pageconceal`
+### `pageswap`
 
 Authors need some point in an outgoing document to customize or skip the cross-document transition.
 
-The current proposed event at whatwg/html#9702 is `pageconceal`. This event is fired when a
+This is provided by the [`pageswap`](https://html.spec.whatwg.org/#the-pageswapevent-interface) event. This event is fired when a
 document is about to be unloaded due to a navigation, and contains the origin-accessible activation info for the next document. If this navigation triggers a view-transition due to a `@view-transition` rule, the event's `viewTransition` property would be a `ViewTransition` object (otherwise it will be null).
 
 Note that this event is different from [`pagehide`](https://html.spec.whatwg.org/multipage/#event-pagehide)
-in the case where a view-transition is present. In that case, `pageconceal` would be fired before the document is hidden, deferring activation of the new document in favor of a final rendering update to capture the old state for the view-transition.
+in the case where a view-transition is present. In that case, `pageswap` would be fired before the document is hidden, deferring activation of the new document in favor of a final rendering update to capture the old state for the view-transition.
 
-When the navigation is not eligible for view-transitions (it's cross-origin, or its navigation type doesn't match the `@view-transition` rule), `pageconceal` is fired right before `pagehide`, but only for the navigating document. Its iframes, or documents that are unloaded without a navigation, don't receive a
-`pageconceal` event.
+When the navigation is not eligible for view-transitions (it's cross-origin, or its navigation type doesn't match the `@view-transition` rule), `pageswap` is fired right before `pagehide`, but only for the navigating document. Its iframes, or documents that are unloaded without a navigation, don't receive a
+`pageswap` event.
 
-A `pageconceal` event has a [`NavigationActivation`](https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigation-activation-interface) property `activation`. This is handy for making decisions about skipping/customizing the transition based on the old/new URL or navigation type. Note that the new URL here
-is the final URL after redirects.
+A `pageswap` event has a [`NavigationActivation`](https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigation-activation-interface) property `activation`. This is handy for making decisions about skipping/customizing the transition based on the old/new URL or navigation type. Note that the new URL here is the final URL after redirects. The `activation` property is null for cross-origin navigations.
 
 ```js
-document.addEventListener("pageconceal", event => {
+document.addEventListener("pageswap", event => {
    if (!event.viewTransition) {
       return;
    }
