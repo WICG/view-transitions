@@ -30,12 +30,63 @@ Identifying all animations correctly requires the browser to render-block the ne
 
 There are a few other scenarios where a feature to control when the parser yields for rendering can be helpful:
 
-- Lower CLS: A stable layout of the DOM depends on both parsing the requisite DOM nodes and fetching relevant stylesheets. Without control over parsing, its possible that the browser does multiple renders with layout shifts as more of the DOM is parsed.
+## Anti-flicker
+A stable layout of the DOM depends on both parsing the requisite DOM nodes and fetching relevant stylesheets. Without control over parsing, its possible that the browser does multiple renders with layout shifts as more of the DOM is parsed.
 Authors will sometimes initially set `display: none` or `opacity: 0` to hide the whole Document to prevent this, only showing it when enough of the Document is parsed.
 
-- Atomic rendering of semantic elements: A UI widget built using a DOM sub-tree might not make sense to render partially. Consider a menu where only half the buttons show up on first render. Authors could mark sections in the Document which semantically render one widget so the browser doesn't yield midway through parsing one widget.
+The whole solution of render-blocking (scripts, styles, fonts, HTML) can be an alternative to the existing
+[anti-flicker scripts](https://andydavies.me/blog/2020/11/16/the-case-against-anti-flicker-snippets/).
+Because render-blocking is not complete today, styling the whole document to be hidden and changing that
+in script after some timeout or condition is currently a very common approach.
 
-- Optimal Yielding: The browser may yield later than was necessary leading to rendering more what's required for above the fold content. A developer hint about a yielding trigger could imply the first frame has less DOM to parse, style, and layout. Browsers can optimize paint to be limited to onscreen content but the prior stages are executed over the entire DOM.
+### Anti-flicker with hide-first-show-later
+
+This is a very common pattern:
+```css
+html.hide {
+  visibility: hidden;
+}
+```
+
+```html
+<html class="hide">
+<body>
+<!-- essential content ... --->
+  <script>
+    document.documentElement.classList.remove("hide");
+  </script>
+</body>
+```
+
+This approach has several disadvantages:
+1. It's inefficient: the browser has to keep recalculating style until that script is run.
+2. It doesn't gracefully degrade: if the script doesn't run at all for some reason, the result would
+be that the whole page appears to not load.
+
+### Anti-flicker with render-blocking
+```html
+<html>
+<head>
+<link rel="expect" href="#the-fold" blocking="render">
+
+<body>
+<!-- essential content ... --->
+<a id="the-fold"></a>
+```
+
+This approach doesn't have those disadvantages:
+1. Since blocking is rendered, redundant style calculation are avoided.
+2. If the requisite element is not found, rendering would be unblocked when the document parsing
+finishes. So the worse case scenario here is a slightly longer time till first contentful paint,
+while the worse case scenario for the hide-first-show-later approach is a page that doesn't
+display content all.
+
+
+## Atomic rendering of semantic elements
+A UI widget built using a DOM sub-tree might not make sense to render partially. Consider a menu where only half the buttons show up on first render. Authors could mark sections in the Document which semantically render one widget so the browser doesn't yield midway through parsing one widget.
+
+## Optimal Yielding
+The browser may yield later than was necessary leading to rendering more what's required for above the fold content. A developer hint about a yielding trigger could imply the first frame has less DOM to parse, style, and layout. Browsers can optimize paint to be limited to onscreen content but the prior stages are executed over the entire DOM.
 However, its difficult for authors to know when the above-the-fold content ends given the variety of device form factors. This situation could also be solved better by `content-visibility: auto` which can optimize out style/layout for offscreen content.
 
 These use-cases are not the primary problem targeted by this proposal, they are listed to evaluate whether the ability to block parsing should be limited to when the new Document will be displayed with a View Transition or all loads.
