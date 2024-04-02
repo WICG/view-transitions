@@ -62,18 +62,20 @@ The entire painting of the element is captured, including things which appear ou
 
 https://user-images.githubusercontent.com/93594/141118353-d62d19a1-0964-4fa0-880f-bdde656ce899.mp4
 
-The element is captured without the effects (such as opacity and filters) from parent elements. Effects on the element itself are baked into the image. However, the element is captured without transforms, as those transforms are reapplied later.
+The element is captured without the effects (such as opacity and filters) from parent elements. Effects on the element itself are baked into the image. However, the element is captured without transforms, as those transforms are reapplied later. The root is always captured as a single image, with the other transition elements removed (similar to how compositing works today).
 
 Capturing an element in this way isn't a new concept to the platform, as [`element()`](<https://developer.mozilla.org/en-US/docs/Web/CSS/element()>) in CSS performs a similar action. The differences are documented later.
 
-The root is always captured as a single image, with the other transition elements removed (similar to how compositing works today), and is also clipped to the viewport, as capturing the entire page would take an enormous amount of memory in many cases.
-
 Capturing as a CSS image avoids the interactivity risks, complexities, and memory impact of fully preserving these parts of Page-A as live DOM. On the other hand, it means that the capture will be 'static'. If it includes things like gifs, video, or other animating content, they'll be frozen on the frame they were displaying when captured.
 
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/72): Should we have a way to expand the root capture area for particular transitions? For example, transitions that involve vertical movement?
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/73): Other elements can also be massive. Do we need a way to limit and control the captured size of those?
+#### Image Size
+The size of the image cached for an element is equal to the element's [ink overflow rectangle](https://drafts.csswg.org/css-overflow-3/#ink-overflow-rectangle). This allows exposing parts of an element during the transition which may have been hidden earlier. The user-agent is allowed to clip the image to an implementation defined size (a common case would be the max texture size supported by the device). When caching a subset of the element due to this constraint, the area within the element cached by the user-agent is the area closest to the viewport.
 
-This mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently and doesn't stretch. There's another mode for that:
+The size of the root image and the area captured follows a pattern similar to shared elements. However, since the root image is generated using the root stacking context it is likely to be clipped to an implementation defined size in most cases.
+
+An alternate choice was to clip the element to viewport bounds to limit memory use, particularly for the root element. This can be added as a perfomance hint from the developer in future iterations. See issues [72](https://github.com/WICG/shared-element-transitions/issues/72) and [73](https://github.com/WICG/shared-element-transitions/issues/73) for detailed discussion on this topic.
+
+The single image mode works great for the share button and the root, as their transitions can be represented by simple transforms. However, the header changes size without stretching its shadow, and the content of the header moves independently and doesn't stretch. There's another mode for that:
 
 ### As the element's computed style + content image
 
@@ -182,9 +184,11 @@ Everything is now in place to perform the transition. The developer can animate 
 
 https://user-images.githubusercontent.com/93594/141100217-ba1fa157-cd79-4a9d-b3b4-67484d3c7dbf.mp4
 
+Note that the browser defers displaying elements from Page-B and starting the animation until Page-B is ready for first render. This is currently driven by internal browser heuristics and is being standardized in the proposal [here](https://github.com/whatwg/html/issues/7131).
+
 ## Part 4: The end
 
-When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B.
+When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B. The transition completes once no pseudo element has an active animation.
 
 # The MPA API
 
@@ -268,7 +272,6 @@ Because the images are sized to 100% of the container, the images will also chan
 
 In all cases, the duration and easing is some undecided default, that could even be platform independent.
 
-- [Open question](https://github.com/WICG/shared-element-transitions/issues/83): When will the default animation start? When the browser would usually first render Page-B?
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/84): Default animations work well for things which are at least partially in-viewport in both Page-A and Page-B, but it gets tricky if you consider a non-sticky header that scrolled out of view by 1000s of pixels.
 - [Open question](https://github.com/WICG/shared-element-transitions/issues/85): If the developer wants a default animation of the root only, how do they define that?
 
