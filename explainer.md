@@ -188,7 +188,7 @@ Note that the browser defers displaying elements from Page-B and starting the an
 
 ## Part 4: The end
 
-When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B.
+When the transition is complete, the transition elements created by the UA are removed, revealing the real Page-B. The transition completes once no pseudo element has an active animation.
 
 # The MPA API
 
