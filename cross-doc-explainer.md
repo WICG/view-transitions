@@ -156,7 +156,7 @@ When the navigation is not eligible for view-transitions (it's cross-origin, or 
 A `pageswap` event has a [`NavigationActivation`](https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigation-activation-interface) property `activation`. This is handy for making decisions about skipping/customizing the transition based on the old/new URL or navigation type. Note that the new URL here is the final URL after redirects. The `activation` property is null for cross-origin navigations.
 
 ```js
-document.addEventListener("pageswap", event => {
+window.addEventListener("pageswap", event => {
    if (!event.viewTransition) {
       return;
    }
@@ -187,7 +187,7 @@ Note that this event is different from [`pageshow`](https://html.spec.whatwg.org
 a newly initialized document fires `pageshow` is only once the document is fully loaded.
 
 ```js
-document.addEventListener("pagereveal", event => {
+window.addEventListener("pagereveal", event => {
    if (!event.viewTransition)
       return;
    const from_path = new URL(navigation.activation.from).pathname;
