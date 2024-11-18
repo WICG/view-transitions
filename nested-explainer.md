@@ -138,7 +138,9 @@ Apart from the above properties, the pseudo-elements are modified to make them d
 - What should be the opt-in/opt-out model etc? Should we just change the current thing and rely on DOM? Add a CSS property? What's the default?
 - What happens to scrollbars? Are they content (and would thus appear behind nested elements)? If they are captured, the scroll position will change during the animation... What's the best model?
 
-
+## Status
+Currently due to the open issues and the complexity this adds to developers using this feature, layered capture is not actively pursued.
+This means that in order to use nested view transitions, the developers would have to manually copy over the relevant CSS properties themselves.
 
 
 
