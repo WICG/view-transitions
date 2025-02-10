@@ -109,7 +109,7 @@ with appropriate modifications.  At a high level:
 
 5. Run the animations.
 
-6. Clean up by destorying the pseudo-element tree.
+6. Clean up by destroying the pseudo-element tree.
 
 Between steps 2 and 4, we need to pause the rendering of the scoped transition
 root's subtree so that the developer can update it without presenting those
@@ -117,7 +117,7 @@ updates to the user.
 
 ## Constraints
 
-Scoped view transitions imposes certain constraints:
+Scoped view transitions impose certain constraints:
 
 * There shouldn't be more than one active transition running on the same scoped
   transition root. If a new transition is started on the same element, we
@@ -128,7 +128,7 @@ Scoped view transitions imposes certain constraints:
   started which would trigger this situation, we should cancel the old one.
 
 * The scoped transition root must have `contain: layout`. This ensures that it
-  generates a [stacking context](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_positioned_layout/Understanding_z-index/Stacking_context)
+  generates a [stacking context](https://developer.mozilla.org/docs/Web/CSS/CSS_positioned_layout/Understanding_z-index/Stacking_context)
   so that its painted output can be captured as an atomic unit.
 
 Within these constraints it should be possible for two view transitions to run
