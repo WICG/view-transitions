@@ -111,9 +111,9 @@ with appropriate modifications.  At a high level:
 
 6. Clean up by destroying the pseudo-element tree.
 
-Between steps 2 and 4, we need to pause the rendering of the scoped transition
-root's subtree so that the developer can update it without presenting those
-updates to the user.
+Between steps 2 and 4, we need to [pause the rendering](#Pause-rendering) of the
+scoped transition root's subtree, so that any DOM updates inside that subtree
+that occur during the callback are not presented to the user prematurely.
 
 ## Constraints
 
