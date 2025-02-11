@@ -1,8 +1,10 @@
-# Scoped Transitions
+# Scoped View Transitions
 
-This doc is a summary of early design explorations to scope transitions to a DOM sub-tree. It uses the pseudo-element tree to describe the UA generated tree to refer to the existing spec. A [separate doc considers an alternate Shadow DOM implementation](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing).
+Scoped view transitions are a proposed extension to the
+[View Transition API][VT-api] to help developers perform transitions within the
+scope of a DOM subtree.
 
-The following is a rough API sketch for how a developer would trigger the transition rooted on an element (other than the document's root element).
+The new API looks like this:
 
 ```js
 element.startViewTransition(() => {
@@ -10,121 +12,156 @@ element.startViewTransition(() => {
 });
 ```
 
-The element becomes the **scoped-transition-root** for the transition. It's the element that will host the pseudo-element tree and page-transition-container sub-trees will be created for descendants that have a `page-transition-tag`. For example, the following page:
+This performs a same-document view transition similar to
+[`document.startViewTransition()`][document-SVT], except that we are now calling
+`startViewTransition()` on an arbitrary HTML element instead of the document.
+
+That element becomes the **scoped transition root** for the transition, which
+means that it will host the [`::view-transition`][v-t-pseudo] pseudo-element
+tree, and act as a container for the transition animations.
+
+This delivers three benefits to the developer that were not achievable before:
+
+* _Concurrent transitions:_  Two or more elements can run view transitions at the same
+  time without being aware of each other.  For example, different component libraries
+  may each want to use view transitions and remain composable with each other.
+
+* _Transitions affected by ancestor properties:_  View transitions can render
+  inside a container that applies a clip, transform, or animation to it. For
+  example, a view transition may run inside content while that content is
+  scrolling.
+
+* _Smooth rendering outside the transition scope:_  View transitions have to [pause
+  rendering](#Pause-rendering) while the DOM callback is running, but now we can pause rendering in
+  only part of the page.
+
+Scoped view transitions have been proposed to the CSS Working Group
+([#9890](https://github.com/w3c/csswg-drafts/issues/9890)) as a change to the
+[CSS View Transitions Module Level 2][css-view-transitions-2] specification.
+They are being prototyped in Chromium ([crbug.com/394052227](https://crbug.com/394052227))
+behind the `--enable-features=ScopedViewTransitions` command-line flag.
+
+[VT-api]: https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API
+[document-SVT]: https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition
+[v-t-pseudo]: https://developer.mozilla.org/en-US/docs/Web/CSS/::view-transition
+[css-view-transitions-2]: https://drafts.csswg.org/css-view-transitions-2/
+
+## Pseudo-element tree
+
+The pseudo-element tree for a scoped view transition looks similar to the
+[pseudo-element tree for a document view transition](https://drafts.csswg.org/css-view-transitions-1/#view-transition-pseudos),
+except that it is associated with the scoped transition root instead of the
+`<html>` element.
+
+For example, the following page:
 
 ```html
 <style>
-  .outer {
-    page-transition-tag: outer;
+  .scope-root {
     contain: layout;
+    view-transition-name: outer;
   }
-  .inner {
-    page-transition-tag: inner;
-    contain: layout;
+  .inner-group {
+    view-transition-name: inner;
   }
 </style>
-<div class="outer">
-  <div class="inner"></div>
+<div class="scope-root">
+  <div class="inner-group"></div>
 </div>
 <script>
-  document.querySelector('.outer').createTransition(…);
+  const element = document.querySelector('.scope-root');
+  element.startViewTransition(...);
 </script>
 ```
 
-produces the following DOM tree under `outer`:
+produces the following DOM subtree:
 
 ```
-outer
-└─ ::page-transition
-   ├─ ::page-transition-container(outer)
-   │  └─ ::page-transition-image-wrapper(outer)
-   │     ├─ ::page-transition-outgoing-image(outer)
-   │     └─ ::page-transition-incoming-image(outer)
-   └─ ::page-transition-container(inner)
-      └─ ::page-transition-image-wrapper(inner)
-         ├─ ::page-transition-outgoing-image(inner)
-         └─ ::page-transition-incoming-image(inner)
-
-Note: We will probably need to change the naming, as 'page-transition' doesn't work.
+div.scope-root
+└─ ::view-transition
+   ├─ ::view-transition-group(outer)
+   │  └─ ::view-transition-image-pair(outer)
+   │     ├─ ::view-transition-old(outer)
+   │     └─ ::view-transition-new(outer)
+   └─ ::view-transition-group(inner)
+      └─ ::view-transition-image-pair(inner)
+         ├─ ::view-transition-old(inner)
+         └─ ::view-transition-new(inner)
 ```
 
-The algorithm for executing the transition is as follows:
+## Algorithm
 
-1. At the next rendering opportunity after `startViewTransition`, the browser saves the painted output and geometry information for each tagged element under scoped-transition-root. The details are described in [7.3.4](https://drafts.csswg.org/css-shared-element-transitions-1/#perform-an-outgoing-capture-algorithm) except transforms are computed relative to the element. A task is queued to dispatch the callback passed to `startViewTransition` after this step.
+The steps for a scoped view transition are based on the
+[steps for a document view transition](https://drafts.csswg.org/css-view-transitions-1/#lifecycle)
+with appropriate modifications.  At a high level:
 
-2. For every subsequent rendering opportunity, the browser renders the sub-tree under scoped-transition-root using the cached output captured in step 1. This is done by generating the pseudo-element sub-tree (originating from scoped-transition-root) as described in [7.9](https://drafts.csswg.org/css-shared-element-transitions-1/#create-transition-pseudo-elements-algorithm) except only outgoing-image pseudo-elements are generated. See [Timing for generating pseudo elements](#timing-for-generating-pseudo-elements) for details.
+1. Create the [`ViewTransition`](https://drafts.csswg.org/css-view-transitions-1/#viewtransition) object.
 
-   This allows the developer to update scoped-transition-root's subtree without presenting it to the user. See [Suppressing rendering](#suppressing-rendering) for details.
+2. At the next rendering opportunity, capture the painted output of each tagged
+   element under the scoped transition root, and create the pseudo-element tree
+   with `::view-transition-old` pseudo-elements.  A tagged element's geometry
+   information is computed relative to the scoped transition root.
 
-3. The captured output above is painted in a stacking context which is a descendant of scoped-transition-root's stacking context. The above example generates the following stacking context hierarchy.
+3. Invoke the callback passed to `startViewTransition`.
 
-   ```
-   root
-   └─ outer
-      ├─ inner
-      └─ outer-page-transition (pseudo-tree underneath)
-   ```
+4. Create the `::view-transition-new` pseudo-elements and set up the default
+   animations.
 
-   If the scoped-transition-root is tagged, it's snapshot uses [content-capture](https://github.com/WICG/shared-element-transitions/blob/main/explainer.md#more-granular-style-capture) mode. This means that only the element's descendants (including both text and elements) are painted in the snapshot while box decorations (like border, box-shadow) continue to paint in the outer stacking context. See [root snapshot](#root-snapshot) for details.
+5. Run the animations.
 
-4. Once the callback passed to `startViewTransition` is finished, incoming-image pseudo-elements are added to the tree generated in step 2. Default animations are added as defined in [7.8](https://drafts.csswg.org/css-shared-element-transitions-1/#animate-a-page-transition-algorithm).
+6. Clean up by destroying the pseudo-element tree.
+
+Between steps 2 and 4, we need to [pause the rendering](#Pause-rendering) of the
+scoped transition root's subtree, so that any DOM updates inside that subtree
+that occur during the callback are not presented to the user prematurely.
 
 ## Constraints
 
-An element which is the root for a transition has the following constraints. These constraints may stop being satisfied at any phase of the transition lifecycle and we'll need to define the fallback behavior for such cases. The simplest option is to consider them a developer error and [skip the transition](https://drafts.csswg.org/css-shared-element-transitions-1/#skip-the-page-transition).
+Scoped view transitions impose certain constraints:
 
-1. There shouldn't be an active transition on the element, its descendants or its ancestors. This is because a transition involves taking the painted output of an element and rendering it into a pseudo-element. For example, in the following case:
+* There shouldn't be more than one active transition running on the same scoped
+  transition root. If a new transition is started on the same element, we
+  should cancel the old one.
 
-   ```html
-   <style>
-     .outer {
-       page-transition-tag: outer;
-     }
-     .inner {
-       page-transition-tag: inner;
-     }
-   </style>
-   <div class="outer">
-     <div class="inner"></div>
-   </div>
-   ```
+* A tagged element cannot participate (by generating a `::view-transition-group`)
+  in more than one active transition at the same time. If a new transition is
+  started which would trigger this situation, we should cancel the old one.
 
-   ```js
-   document.createTransition(…);
-   document.querySelector('.outer').createTransition(…);
-   ```
+* The scoped transition root must have `contain: layout`. This ensures that it
+  generates a [stacking context](https://developer.mozilla.org/docs/Web/CSS/CSS_positioned_layout/Understanding_z-index/Stacking_context)
+  so that its painted output can be captured as an atomic unit.
 
-   There will be an image pseudo-element for `inner` in pseudo-elements generated on `html` and `outer`. Its ambiguous which pseudo-element it should be painted in.
-   
-   An alternate less severe limitation is: "No descendant of scoped-transition-root should be a shared element in any other transition". If the scoped-transition-root itself is tagged, its entire painting (with its pseudo-tree) can be placed in a image pseudo-element generated under its ancestor. But if one of its descendants is tagged in scoped-transition-root's ancestor's transition, then its unclear which pseudo-element its painting should go to. Given that the use-case for concurrent scoped transitions is independent components, a root transition shouldn't need to tag elements within a transitioning embedded component.
+Within these constraints it should be possible for two view transitions to run
+on different scoped transition roots even if one is a descendant of the other.
+This is important for independent web components to be composable.
 
-   Note: We could provide an API to get the active transitions an element is involved in, so the developer can choose to wait for them.
+## Pause rendering
 
-2. The element which is the root for a transition must have `contain: layout`. This ensures it generates a stacking context and its painted output can be captured as an atomic unit.
+The developer can asynchronously mutate the DOM during the `startViewTransition`
+callback (which may return a Promise). To avoid presenting intermediate states
+to the user, we must pause the rendering of the DOM being transitioned.
 
-## Timing for generating pseudo elements
+Document view transitions pause the rendering of the entire document while the
+callback is running, but scoped view transitions will only pause the rendering
+of the DOM subtree under the scoped transition root.
 
-Pseudo-elements generated in step 2 don't need to be developer exposed so UAs can use an alternate approach. Using pseudo-elements (and default browser CSS) here helps define a consistent behavior for how snapshots are rendered if the scoped-transition-root is resized. For example, the ::page-transition pseudo-element is going to be `position: absolute` and will use scoped-transition-root as its containing block. The exact scaling/clipping we get on the snapshots will be determined by the CSS on this pseudo-element tree.
+When the callback is finished and the transition animations are running, the
+rendering is no longer paused, but each tagged element participating in the
+transition has its rendering hoisted into the corresponding
+`::view-transition-new` pseudo-element. (This is the same for scoped and
+document view transitions.)
 
-A simpler option could be to treat the entire content captured under scoped-transition-root as an atomic snapshot which is scaled to fill the scoped-transition-root similar to `object-fit: fill`.
+## Box decorations
 
-## Suppressing rendering
+If a scoped transition root has `overflow:clip`, then its pseudo-element tree
+is affected by the clip. If it is also tagged with `view-transition-name`, then
+its snapshot will not include box decorations like `border` and effects like
+`filter:blur()` which draw outside the clip.
 
-Transitions allow the developer to asynchronously mutate the DOM to the next state while the browser presents the visual output of the previous state to the user. This requires suppressing rendering of the DOM being transitioned to prevent presenting intermediate states to the user. The options for this are:
+This is a behavior difference of scoped view transitions compared to snapshots
+of the `html` element which do include these things.
 
-1. Rendering opportunities are paused. The developer can trigger style/layout via script APIs like `getComputedStyle` but [update the rendering](https://html.spec.whatwg.org/multipage/webappapis.html#update-the-rendering) loop doesn't run. This is developer observable since script callbacks (like rAF) won't be dispatched.
+## Prior Work
 
-   This behaviour aligns with [render-blocking](https://html.spec.whatwg.org/multipage/dom.html#render-blocking-mechanism). Cross-document transitions can rely on render-blocking as an independent feature to control the first paint of the new Document. The same-document API provides the same contract, rendering opportunities remain paused until the promise returned by updateDOM callback resolves. However it can't be used for scoped transitions since a transition in a sub-tree shouldn't pause rendering for the complete Document.
-  
-2. Continue running rendering opportunities but skip painting the DOM tree participating in a transition.
-
-In both cases, the browser needs to ensure all animations within the DOM sub-tree are paused. The proposal is to use 1 for root transitions and 2 for scoped transitions.
-
-## Root snapshot
-
-The behaviour for root snapshot differs between root and scoped transitions. For root transitions, snapshots of the `html` element include box decorations like `background` and effects like `filter` applied to the root element. But scoped transitions exclude these from scoped-transition-root's snapshot.
-
-The reason for this is the impact of `overflow` clipping on the snapshots. For instance, scoped-transition-root could have `overflow:clip` and `filter:blur(5px)`. The blur will draw outside the box because `overflow:clip` only affects the content (not self effects). But the pseudo-element displaying scoped-transition-root's image will be its descendant. So it should clip the image and as a result will clip these box decorations.
-
-Updates to these properties on scoped-transition-root are immediately painted (as opposed to being animated).
-
+[Jake Archibald, "Shadow DOM or not - shared element transitions" (Sep 2022)](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing)
+considers an alternate Shadow DOM implementation.
