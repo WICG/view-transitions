@@ -20,7 +20,7 @@ That element becomes the **scoped transition root** for the transition, which
 means that it will host the [`::view-transition`][v-t-pseudo] pseudo-element
 tree, and act as a container for the transition animations.
 
-This delivers three benefits to the developer that were not achievable before:
+This delivers four benefits to the developer that were not achievable before:
 
 * _Concurrent transitions:_  Two or more elements can run view transitions at the same
   time without being aware of each other.  For example, different component libraries
@@ -34,6 +34,11 @@ This delivers three benefits to the developer that were not achievable before:
 * _Smooth rendering outside the transition scope:_  View transitions have to [pause
   rendering](#Pause-rendering) while the DOM callback is running, but now we can pause rendering in
   only part of the page.
+
+* _Transitions respect z-index:_  Non-transitioning content outside the scoped
+  transition root can now paint on top of the transitioning content.  This is
+  useful for overlays such as menus and notification bars, which previously
+  could not stack in front of the pseudo-element tree.
 
 Scoped view transitions have been proposed to the CSS Working Group
 ([#9890](https://github.com/w3c/csswg-drafts/issues/9890)) as a change to the
