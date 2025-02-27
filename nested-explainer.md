@@ -1,4 +1,4 @@
-# Explainer: Nested View Transitions & Capture Modes
+# Explainer: Nested View Transitions
 
 # Overview
 [view transitions](https://www.w3.org/TR/css-view-transitions-1/) work by generating a pseudo-element tree representing groups of the captured old state & the live new state of a transition.
