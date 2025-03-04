@@ -1,4 +1,4 @@
-# Explainer: Nested View Transitions
+# Explainer: Nested View Transition Groups
 
 # Overview
 [view transitions](https://www.w3.org/TR/css-view-transitions-1/) work by generating a pseudo-element tree representing groups of the captured old state & the live new state of a transition.
@@ -16,7 +16,8 @@ some animations would look "broken" by default, e.g. elements abruptly lose thei
 
 The solution is based on two features. They are completely decoupled from each other, but work together to address the use case.
 
-## Nested view transitiions
+## Nested View Transition Groups
+
 Instead of a flat tree, the author can nest `::view-transition-group` pseudo-elements within each other.
 This is done with a new property, `view-transition-group`, which when applied on an element with a `view-transition-name`, defines whether the generated `::view-transition-group` gets nested in one of its containers,
 or it would nest its own participating descendants.
