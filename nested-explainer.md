@@ -12,9 +12,9 @@ This is sufficient for many use cases, but not for all. Some CSS features rely o
 When any of the above features is used, view transitions start to feel constrained. Apart from the fact that not all animation styles are possible,
 some animations would look "broken" by default, e.g. elements abruptly lose their clip for the duration of the transition.
 
-# Proposed solutions
+# Proposed solution
 
-The solution is based on two features. They are completely decoupled from each other, but work together to address the use case.
+The proposed solution is to allow authors to nest View Transtion Groups in order to recreate the original hierarchy from the original elements in the DOM.
 
 ## Nested View Transition Groups
 
