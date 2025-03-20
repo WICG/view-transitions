@@ -12,13 +12,13 @@ view-transition mechanism (capture, create pseudo-elements, animate them) for an
 ## Element identity as a name generator
 
 To account for this use case, we allow the authors to specify that a particular element generates its `view-transition-name`.
-- The keyword `self` generates the name from the element's identity. The name itself is not web-observable, it's like an internal token representing the element, and remaining stable.
-- The keyword `auto` generates the name from the element's ID, end if it doesn't exist, reverts to `self`.
+- The keyword `match-element` generates the name from the element's identity. The name itself is not web-observable, it's like an internal token representing the element, and remaining stable.
+- The keyword `auto` generates the name from the element's ID, end if it doesn't exist, reverts to `match-element`. Note that the name is not the element's ID itself, but rather a internal token that is the same token generated for the same id. This is to prevent matches with an explicit `view-transition-name: ident` where `ident` is the same string as the ID.
 
 (Note: the details/naming are discussed in the CSSWG).
 
 ## Caveats and alternatives
-The main issue with `self` (and `auto` when there is no ID present), is that they are specific to the document - they don't work for cross-document view transitions.
+The main issue with `match-element` (and `auto` when there is no ID present), is that they are specific to the document - they don't work for cross-document view transitions.
 This is unlike all/most of the other view-transition features. However, this feature is seen as a DX convenience enhancement, and developers can always resort to using IDs or explicit names.
 
 The alternative that is being developed in parallel is using `attr()` and `ident()` to generate an ID explicitly, e.g. `ident("item-", attr(id))`. This would be very flexible, but feels verbose for the common case.
