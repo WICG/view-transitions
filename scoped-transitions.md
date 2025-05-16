@@ -166,6 +166,40 @@ its snapshot will not include box decorations like `border` and effects like
 This is a behavior difference of scoped view transitions compared to snapshots
 of the `html` element which do include these things.
 
+## Transition root
+
+With the addition of scoped view transitions, it becomes difficult to figure out
+which element a particular ViewTransition object represents. For this reason,
+ViewTransition object also contains a `transitionRoot` property which is an
+element that caused this transition to be generated:
+
+```js
+interface ViewTransition {
+    ...
+
+    readonly attribute Element transitionRoot;
+
+    ...
+};
+```
+
+Example usage:
+
+```js
+function processAnimations(transition) {
+    let anims = transition.transitionRoot.getAnimations()
+    ...
+}
+
+...
+
+let transition = el.startViewTransition();
+transition.ready.then(() => processAnimations(transition));
+```
+
+See CSSWG resolution:
+https://github.com/w3c/csswg-drafts/issues/9908#issuecomment-2165621635
+
 ## Prior Work
 
 [Jake Archibald, "Shadow DOM or not - shared element transitions" (Sep 2022)](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing)
