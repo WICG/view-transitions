@@ -1,6 +1,6 @@
 # Scoped View Transitions
 
-Scoped view transitions are a proposed extension to the
+Scoped View Transitions is a proposed extension to the
 [View Transition API][VT-api] to help developers perform transitions within the
 scope of a DOM subtree.
 
@@ -22,7 +22,7 @@ tree, and act as a container for the transition animations.
 
 ## Motivation
 
-Scoped view transitions delivers four benefits to the developer that were not achievable before:
+Scoped View Transitions delivers four benefits to the developer that were not achievable before:
 
 * _Concurrent transitions:_  Two or more elements can run view transitions at the same
   time without being aware of each other.  For example, different component libraries
@@ -44,17 +44,16 @@ Scoped view transitions delivers four benefits to the developer that were not ac
 
 ## Current status
 
-Scoped view transitions have been proposed to the CSS Working Group
+Scoped View Transitions is ready for developer trials. See [How to use](#How-to-use)
+and [Feedback wanted](#Feedback-wanted), below.
+
+The feature has been proposed to the CSS Working Group
 ([#9890](https://github.com/w3c/csswg-drafts/issues/9890)) as a change to the
 [CSS View Transitions Module Level 2][css-view-transitions-2] specification.
-They are being prototyped in Chromium ([crbug.com/394052227](https://crbug.com/394052227))
+It's being prototyped in Chromium ([crbug.com/394052227](https://crbug.com/394052227))
 behind the `--enable-features=ScopedViewTransitions` command-line flag.
 
-Scoped view transitions were presented at the BlinkOn 20 conference in April 2025:
-[slides](https://bit.ly/svt-blinkon),
-[recording](https://bit.ly/svt-blinkon-video).
-
-Here is a [**DEMO**](https://output.jsbin.com/runezug/quiet) of scoped view transitions,
+Here is a [**DEMO**](https://output.jsbin.com/runezug/quiet) of Scoped View Transitions,
 showing concurrent transitions, transitioning inside a scroller, nested scoped transitions,
 and transitioning behind a higher z-index overlay.
 
@@ -65,7 +64,7 @@ and transitioning behind a higher z-index overlay.
 
 ## How to use
 
-You can play with scoped view transitions in Google Chrome today.
+You can play with Scoped View Transitions in Google Chrome today.
 
 * Use Chrome 139 or newer (currently in dev and beta [channels](https://support.google.com/chrome/a/answer/9027636?hl=en)).
 
@@ -112,6 +111,17 @@ Try the above in your browser: https://output.jsbin.com/geyanat
 * In general, there are open questions about the behavior of a "self-participating scope", i.e.
   a scope element that is a participant (`view-transition-name`) in its own
   transition. See [Self-Participating Scopes](https://bit.ly/svt-sps).
+
+## Feedback wanted
+
+We're interested in feedback from the web developer community about
+
+* the shape of the Scoped View Transitions API,
+* use cases where the feature works well or didn't work as expected, and
+* how the questions about [self-participating scopes](https://bit.ly/svt-sps) should be resolved.
+
+You can share your feedback by commenting on
+[CSS WG issue #9890](https://github.com/w3c/csswg-drafts/issues/9890).
 
 ## Design
 
@@ -161,7 +171,7 @@ that occur during the callback are not presented to the user prematurely.
 
 ### Constraints
 
-Scoped view transitions impose certain constraints:
+Scoped View Transitions impose certain constraints:
 
 * There shouldn't be more than one active transition running on the same scoped
   transition root. If a new transition is started on the same element, we
@@ -199,7 +209,7 @@ callback (which may return a Promise). To avoid presenting intermediate states
 to the user, we must pause the rendering of the DOM being transitioned.
 
 Document view transitions pause the rendering of the entire document while the
-callback is running, but scoped view transitions will only pause the rendering
+callback is running, but Scoped View Transitions will only pause the rendering
 of the DOM subtree under the scoped transition root.
 
 When the callback is finished and the transition animations are running, the
@@ -240,3 +250,7 @@ See [CSSWG resolution for the transitionRoot property](https://github.com/w3c/cs
 
 [Jake Archibald, "Shadow DOM or not - shared element transitions" (Sep 2022)](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing)
 considers an alternate Shadow DOM implementation.
+
+Presentation on Scoped View Transitions at the BlinkOn 20 conference in April 2025:
+[slides](https://bit.ly/svt-blinkon),
+[recording](https://bit.ly/svt-blinkon-video).
