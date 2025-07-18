@@ -44,8 +44,8 @@ Scoped View Transitions delivers four benefits to the developer that were not ac
 
 ## Current status
 
-Scoped View Transitions is ready for developer trials. See [How to use](#How-to-use)
-and [Feedback wanted](#Feedback-wanted), below.
+Scoped View Transitions is nearly ready for developer trials.
+See [Known issues](#Known-issues), below.
 
 The feature has been proposed to the CSS Working Group
 ([#9890](https://github.com/w3c/csswg-drafts/issues/9890)) as a change to the
@@ -99,8 +99,11 @@ Try the above in your browser: https://output.jsbin.com/geyanat
 
 ### Known issues
 
-* It's currently necessary to explicitly set `contain: layout` on the scope.
-  If you forget to do this, we may helpfully remind you by crashing ([crbug.com/426218225](https://crbug.com/426218225)).
+* Devtools can crash inspecting view transition pseudo-elements
+  ([crbug.com/432503398](https://crbug.com/432503398)).
+
+* Transitions are invisible when the scope element has changed its `display` style
+  ([crbug.com/432502908](https://crbug.com/432502908)).
 
 * Scopes that are scrollable areas (`overflow: auto` or `overflow: scroll`)
   do not behave as expected, because the pseudo-tree renders inside
