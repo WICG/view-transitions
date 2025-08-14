@@ -44,7 +44,7 @@ Scoped View Transitions delivers four benefits to the developer that were not ac
 
 ## Current status
 
-Scoped View Transitions is nearly ready for developer trials.
+Scoped View Transitions is now ready for developer trials.
 See [Known issues](#Known-issues), below.
 
 The feature has been proposed to the CSS Working Group
@@ -66,7 +66,7 @@ and transitioning behind a higher z-index overlay.
 
 You can play with Scoped View Transitions in Google Chrome today.
 
-* Use Chrome 139 or newer (currently in dev and beta [channels](https://support.google.com/chrome/a/answer/9027636?hl=en)).
+* Use Chrome 140 or newer (currently in dev and beta [channels](https://support.google.com/chrome/a/answer/9027636?hl=en)).
 
 * Enable "Experimental Web Platform features" in `chrome://flags`.
   Alternatively, pass `--enable-features=ScopedViewTransitions` on the command line.
@@ -99,12 +99,6 @@ Try the above in your browser: https://output.jsbin.com/geyanat
 
 ### Known issues
 
-* Devtools can crash inspecting view transition pseudo-elements
-  ([crbug.com/432503398](https://crbug.com/432503398)).
-
-* Transitions are invisible when the scope element has changed its `display` style
-  ([crbug.com/432502908](https://crbug.com/432502908)).
-
 * Scopes that are scrollable areas (`overflow: auto` or `overflow: scroll`)
   do not behave as expected, because the pseudo-tree renders inside
   the scrolling contents ([#12324](https://github.com/w3c/csswg-drafts/issues/12324),
@@ -114,6 +108,9 @@ Try the above in your browser: https://output.jsbin.com/geyanat
 * In general, there are open questions about the behavior of a "self-participating scope", i.e.
   a scope element that is a participant (`view-transition-name`) in its own
   transition. See [Self-Participating Scopes](https://bit.ly/svt-sps).
+
+* If stylesheets change or finish loading during the transition, the new styles
+  are not applied ([crbug.com/433699862](https://crbug.com/433699862)).
 
 ## Feedback wanted
 
