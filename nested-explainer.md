@@ -22,7 +22,7 @@ Instead of a flat tree, the author can nest `::view-transition-group` pseudo-ele
 This is done with a new property, `view-transition-group`, which when applied on an element with a `view-transition-name`, defines whether the generated `::view-transition-group` gets nested in one of its containers,
 or it would nest its own participating descendants.
 
-The generated pseudo-element tree would now be nested.
+The generated pseudo-element tree would now be nested, with nested `::view-transition-group` pseudo-elements grouped into a new `::view-transition-group-children` pseudo.
 Example:
 
 HTML:
@@ -48,14 +48,14 @@ Result:
 ```
 // container does not clip icon
 ::view-transition
-  ::view-transition-group(container)
-    ::view-transition-image-pair(container)
-      ::view-transition-old(container)
-      ::view-transition-new(container)
-  ::view-transition-group(icon)
-    ::view-transition-image-pair(icon)
-      ::view-transition-old(icon)
-      ::view-transition-new(icon)
+├─ ::view-transition-group(container)
+|  ├─ ::view-transition-image-pair(container)
+|  |  ├─ ::view-transition-old(container)
+|  |  └─ ::view-transition-new(container)
+└─ ::view-transition-group(icon)
+   └─ ::view-transition-image-pair(icon)
+      ├─ ::view-transition-old(icon)
+      └─ ::view-transition-new(icon)
 ```
 
 With `view-transition-group`:
@@ -73,14 +73,15 @@ Result:
 ```
 // container clips icon
 ::view-transition
-  ::view-transition-group(container)
-    ::view-transition-image-pair(container)
-      ::view-transition-old(container)
-      ::view-transition-new(container)
-    ::view-transition-group(icon)
-      ::view-transition-image-pair(icon)
-        ::view-transition-old(icon)
-        ::view-transition-new(icon)
+└─ ::view-transition-group(container)
+   ├─ ::view-transition-image-pair(container)
+   |  ├─ ::view-transition-old(container)
+   |  └─ ::view-transition-new(container)
+   └─ ::view-transition-group-children(container)
+      └─ ::view-transition-group(icon)
+         └─ ::view-transition-image-pair(icon)
+            ├─ ::view-transition-old(icon)
+            └─ ::view-transition-new(icon)
 ```
 
 Note that for the pseudo-element to clip its children, we still need to explicitly copy the `clip-path` property in this case.
