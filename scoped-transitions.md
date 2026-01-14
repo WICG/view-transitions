@@ -16,7 +16,7 @@ This performs a same-document view transition similar to
 [`document.startViewTransition()`][document-SVT], except that we are now calling
 `startViewTransition()` on an arbitrary HTML element instead of the document.
 
-That element becomes the **scoped transition root** for the transition, which
+That element becomes the "scope" for the transition, which
 means that it will host the [`::view-transition`][v-t-pseudo] pseudo-element
 tree, and act as a container for the transition animations.
 
@@ -129,7 +129,7 @@ You can share your feedback by commenting on
 
 The pseudo-element tree for a scoped view transition looks similar to the
 [pseudo-element tree for a document view transition](https://drafts.csswg.org/css-view-transitions-1/#view-transition-pseudos),
-except that it is associated with the scoped transition root instead of the
+except that it is associated with the scope instead of the
 `<html>` element.
 
 The example above produces the following DOM subtree during the transition:
@@ -152,9 +152,9 @@ with appropriate modifications.  At a high level:
 1. Create the [`ViewTransition`](https://drafts.csswg.org/css-view-transitions-1/#viewtransition) object.
 
 2. At the next rendering opportunity, capture the painted output of each tagged
-   element under the scoped transition root, and create the pseudo-element tree
+   element in the scope's DOM subtree, and create the pseudo-element tree
    with `::view-transition-old` pseudo-elements.  A tagged element's geometry
-   information is computed relative to the scoped transition root.
+   information is computed relative to the scope.
 
 3. Invoke the callback passed to `startViewTransition`.
 
@@ -166,7 +166,7 @@ with appropriate modifications.  At a high level:
 6. Clean up by destroying the pseudo-element tree.
 
 Between steps 2 and 4, we need to [pause the rendering](#Pause-rendering) of the
-scoped transition root's subtree, so that any DOM updates inside that subtree
+scope's subtree, so that any DOM updates inside that subtree
 that occur during the callback are not presented to the user prematurely.
 
 ### Constraints
@@ -181,12 +181,12 @@ Scoped View Transitions impose certain constraints:
   in more than one active transition at the same time. If a new transition is
   started which would trigger this situation, we should cancel the old one.
 
-* The scoped transition root must have `contain: layout`. This ensures that it
+* The scope must have `contain: layout`. This ensures that it
   generates a [stacking context](https://developer.mozilla.org/docs/Web/CSS/CSS_positioned_layout/Understanding_z-index/Stacking_context)
   so that its painted output can be captured as an atomic unit.
 
 Within these constraints it should be possible for two view transitions to run
-on different scoped transition roots even if one is a descendant of the other.
+on different scopes even if one is a descendant of the other.
 This is important for independent web components to be composable.
 
 ### Tag containment
@@ -210,7 +210,7 @@ to the user, we must pause the rendering of the DOM being transitioned.
 
 Document view transitions pause the rendering of the entire document while the
 callback is running, but Scoped View Transitions will only pause the rendering
-of the DOM subtree under the scoped transition root.
+of the DOM subtree rooted at the scope.
 
 When the callback is finished and the transition animations are running, the
 rendering is no longer paused, but each tagged element participating in the
