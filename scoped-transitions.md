@@ -197,7 +197,11 @@ Because scoped view transitions are intended to enable composition (nesting of
 unrelated components that both use transitions), developers need a way to avoid
 tag collisions when choosing their `view-transition-name` values.
 
-A new style property, `contain: view-transition`, serves this purpose.
+A new style value, `contain: view-transition`, serves this purpose.
+
+> Alternative names for this API have been
+> [proposed](https://github.com/w3c/csswg-drafts/issues/13123), such as
+> `view-transition-scope: auto`.
 
 A scoped view transition looks for tagged participants, starting with the scope
 itself. If this tag search encounters a descendant with `contain: view-transition`,
@@ -285,8 +289,9 @@ ancestor transition.
 
 A scope may also be a scroller — that is, it may have `overflow: auto` or `overflow: scroll`.
 
-Because scopes can be [self-participating](#Self-participating-scopes), the transition
-pseudo-tree is not moved by the scope's scroll offset, or clipped to the scope's client area.
+Note that because scopes can be [self-participating](#Self-participating-scopes), the transition
+pseudo-tree is not moved by the scope's scroll offset. It is also not clipped to the scope's
+client area, which can lead to participants appearing to "pop out" of the scroller.
 
 #### Developer recommendation
 
@@ -295,16 +300,25 @@ If you have a **self-participating scroller scope**, use
 participants are clipped to the scope's client area.
 
 > We are [considering](https://github.com/w3c/csswg-drafts/issues/12324#issuecomment-3638147116)
-> ways to do the above automatically for ergonomic reasons.
+> ways to do the above automatically for ergonomics. Auto-nesting will be prototyped on
+> [crbug.com/475255718](https://crbug.com/475255718).
 
-> Chrome known issue [crbug.com/475236700](https://crbug.com/475236700): the
+> Known issue [crbug.com/475236700](https://crbug.com/475236700): the
 > `::view-transition-group-children` incorrectly overlaps the scrollbars.
 
-If you are opting out of [self-participation](#Self-participating-scopes), your scope
+If you are **opting out** of [self-participation](#Self-participating-scopes), your scope
 probably should not be a scroller. Wrap your scope in a containing `<div>` that is a scroller
 if you want the transition to run inside the scrolling contents.
 
 ## Prior Work
+
+[Self-Participating Scopes](https://bit.ly/svt-sps) reviews design questions relating to
+self-participating scopes. We have settled on the following:
+
+* Self-participation is allowed and the default, but opt-out is possible.
+* Scopes are treated as `contain:v-t` and cannot participate in outer transitions.
+* The `::v-t` pseudo is laid out as a box-tree child of the scope with some magical sibling-like behaviors.
+* The `::v-t` pseudo is painted on top of the scope regardless of z-index.
 
 [Jake Archibald, "Shadow DOM or not - shared element transitions" (Sep 2022)](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing)
 considers an alternate Shadow DOM implementation.
