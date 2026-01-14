@@ -67,8 +67,8 @@ and transitioning behind a higher z-index overlay.
 
 You can play with Scoped View Transitions in Google Chrome today.
 
-* Chrome 145 or newer (currently in dev
-  [channel](https://support.google.com/chrome/a/answer/9027636?hl=en)) is recommended.
+* Chrome 145 or newer (currently in dev and beta
+  [channels](https://support.google.com/chrome/a/answer/9027636?hl=en)) is recommended.
 
 * Enable "Experimental Web Platform features" in `chrome://flags`.
   Alternatively, pass `--enable-features=ScopedViewTransitions` on the command line.
