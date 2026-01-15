@@ -16,7 +16,7 @@ This performs a same-document view transition similar to
 [`document.startViewTransition()`][document-SVT], except that we are now calling
 `startViewTransition()` on an arbitrary HTML element instead of the document.
 
-That element becomes the **scoped transition root** for the transition, which
+That element becomes the "scope" for the transition, which
 means that it will host the [`::view-transition`][v-t-pseudo] pseudo-element
 tree, and act as a container for the transition animations.
 
@@ -34,8 +34,8 @@ Scoped View Transitions delivers four benefits to the developer that were not ac
   scrolling.
 
 * _Smooth rendering outside the transition scope:_  View transitions have to [pause
-  rendering](#Pause-rendering) while the DOM callback is running, but now we can pause rendering in
-  only part of the page.
+  rendering][render-suppression] while the DOM callback is running, but now we can
+  pause rendering in only part of the page.
 
 * _Transitions respect z-index:_  Non-transitioning content outside the scoped
   transition root can now paint on top of the transitioning content.  This is
@@ -45,7 +45,7 @@ Scoped View Transitions delivers four benefits to the developer that were not ac
 ## Current status
 
 Scoped View Transitions is now ready for developer trials.
-See [Known issues](#Known-issues), below.
+See [Chrome Platform Status](https://chromestatus.com/feature/5109852273377280).
 
 The feature has been proposed to the CSS Working Group
 ([#9890](https://github.com/w3c/csswg-drafts/issues/9890)) as a change to the
@@ -61,12 +61,14 @@ and transitioning behind a higher z-index overlay.
 [document-SVT]: https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition
 [v-t-pseudo]: https://developer.mozilla.org/en-US/docs/Web/CSS/::view-transition
 [css-view-transitions-2]: https://drafts.csswg.org/css-view-transitions-2/
+[render-suppression]: https://drafts.csswg.org/css-view-transitions/#document-rendering-suppression-for-view-transitions
 
 ## How to use
 
 You can play with Scoped View Transitions in Google Chrome today.
 
-* Use Chrome 140 or newer (currently in dev and beta [channels](https://support.google.com/chrome/a/answer/9027636?hl=en)).
+* Chrome 145 or newer (currently in dev and beta
+  [channels](https://support.google.com/chrome/a/answer/9027636?hl=en)) is recommended.
 
 * Enable "Experimental Web Platform features" in `chrome://flags`.
   Alternatively, pass `--enable-features=ScopedViewTransitions` on the command line.
@@ -74,7 +76,7 @@ You can play with Scoped View Transitions in Google Chrome today.
 * In your HTML, declare a scope element with `contain: view-transition layout`, and
   one or more participants with `view-transition-name` style. Example:
 
-```
+```html
 <style>
   #scope { contain: view-transition layout }
   #participant { view-transition-name: greeting }
@@ -87,7 +89,7 @@ You can play with Scoped View Transitions in Google Chrome today.
 * In your Javascript, call `startViewTransition` on the scope. Pass a callback that
   modifies the participants.
 
-```
+```html
 <script>
   scope.startViewTransition(() => {
     participant.innerText = "World";
@@ -95,30 +97,11 @@ You can play with Scoped View Transitions in Google Chrome today.
 </script>
 ```
 
-Try the above in your browser: https://output.jsbin.com/geyanat
-
-### Known issues
-
-* Scopes that are scrollable areas (`overflow: auto` or `overflow: scroll`)
-  do not behave as expected, because the pseudo-tree renders inside
-  the scrolling contents ([#12324](https://github.com/w3c/csswg-drafts/issues/12324),
-  [crbug.com/417988089](https://crbug.com/417988089)). To avoid this problem,
-  make your scope element a child of the scrollable area.
-
-* In general, there are open questions about the behavior of a "self-participating scope", i.e.
-  a scope element that is a participant (`view-transition-name`) in its own
-  transition. See [Self-Participating Scopes](https://bit.ly/svt-sps).
-
-* If stylesheets change or finish loading during the transition, the new styles
-  are not applied ([crbug.com/433699862](https://crbug.com/433699862)).
-
 ## Feedback wanted
 
 We're interested in feedback from the web developer community about
-
-* the shape of the Scoped View Transitions API,
-* use cases where the feature works well or didn't work as expected, and
-* how the questions about [self-participating scopes](https://bit.ly/svt-sps) should be resolved.
+the shape of the Scoped View Transitions API, and
+use cases where the feature works well or didn't work as expected.
 
 You can share your feedback by commenting on
 [CSS WG issue #9890](https://github.com/w3c/csswg-drafts/issues/9890).
@@ -129,19 +112,29 @@ You can share your feedback by commenting on
 
 The pseudo-element tree for a scoped view transition looks similar to the
 [pseudo-element tree for a document view transition](https://drafts.csswg.org/css-view-transitions-1/#view-transition-pseudos),
-except that it is associated with the scoped transition root instead of the
+except that it is associated with the scope instead of the
 `<html>` element.
 
 The example above produces the following DOM subtree during the transition:
 
 ```
-div.scope
+div#scope
 └─ ::view-transition
+   ├─ ::view-transition-group(root)
+   │  └─ ::view-transition-image-pair(root)
+   │     ├─ ::view-transition-old(root)
+   │     └─ ::view-transition-new(root)
    └─ ::view-transition-group(greeting)
       └─ ::view-transition-image-pair(greeting)
          ├─ ::view-transition-old(greeting)
          └─ ::view-transition-new(greeting)
 ```
+
+The `::view-transition` pseudo-element is laid out as a
+`position: absolute; inset: 0` child of the scope. However, see
+[Self-participating scopes](#Self-participating-scopes) and
+[Scroller scopes](#Scroller-scopes) below for some special aspects of the relationship
+between the scope and its pseudo tree.
 
 ### Algorithm
 
@@ -152,9 +145,9 @@ with appropriate modifications.  At a high level:
 1. Create the [`ViewTransition`](https://drafts.csswg.org/css-view-transitions-1/#viewtransition) object.
 
 2. At the next rendering opportunity, capture the painted output of each tagged
-   element under the scoped transition root, and create the pseudo-element tree
-   with `::view-transition-old` pseudo-elements.  A tagged element's geometry
-   information is computed relative to the scoped transition root.
+   element in the scope's DOM subtree, and create the pseudo-element tree
+   with `::view-transition-old` pseudo-elements. A tagged element's geometry
+   information is computed relative to the scope.
 
 3. Invoke the callback passed to `startViewTransition`.
 
@@ -165,42 +158,60 @@ with appropriate modifications.  At a high level:
 
 6. Clean up by destroying the pseudo-element tree.
 
-Between steps 2 and 4, we need to [pause the rendering](#Pause-rendering) of the
-scoped transition root's subtree, so that any DOM updates inside that subtree
+Between steps 2 and 4, we [pause the rendering](#Pause-rendering) of the
+scope's subtree, so that any DOM updates inside that subtree
 that occur during the callback are not presented to the user prematurely.
 
 ### Constraints
 
-Scoped View Transitions impose certain constraints:
+* The scope must be a block container with `contain: layout`. This ensures that
+  it generates a [stacking context][stacking-contexts] so that its painted
+  output can be captured as an atomic unit. (`display: inline-block` is allowed.)
 
-* There shouldn't be more than one active transition running on the same scoped
-  transition root. If a new transition is started on the same element, we
-  should cancel the old one.
+> If the scope does not have `contain: layout`, it acquires the behavior of
+> `contain: layout` while the transition is running. But it's recommended for
+> the developer to set `contain: layout` explicitly, since toggling it can reflow
+> the surrounding content.
+
+* There cannot be more than one active transition with the same scope. If a
+  transition is started on an element that is already running a transition, the
+  pre-existing transition is skipped.
 
 * A tagged element cannot participate (by generating a `::view-transition-group`)
-  in more than one active transition at the same time. If a new transition is
-  started which would trigger this situation, we should cancel the old one.
+  in more than one active transition at the same time. If a transition is
+  started which would trigger this situation, the pre-existing transition is
+  skipped.
 
-* The scoped transition root must have `contain: layout`. This ensures that it
-  generates a [stacking context](https://developer.mozilla.org/docs/Web/CSS/CSS_positioned_layout/Understanding_z-index/Stacking_context)
-  so that its painted output can be captured as an atomic unit.
+> Note: There is a [proposal](https://github.com/w3c/csswg-drafts/issues/12323)
+> to skip the inner transition instead.
 
-Within these constraints it should be possible for two view transitions to run
-on different scoped transition roots even if one is a descendant of the other.
+Within these constraints it is possible for two view transitions to run
+concurrently on different scopes, even if one is a descendant of the other.
 This is important for independent web components to be composable.
+
+[stacking-contexts]: https://developer.mozilla.org/docs/Web/CSS/CSS_positioned_layout/Understanding_z-index/Stacking_context
 
 ### Tag containment
 
-We're adding `contain: view-transition` to help developers avoid tag collisions
-when nesting components that use view transitions.
+Because scoped view transitions are intended to enable composition (nesting of
+unrelated components that both use transitions), developers need a way to avoid
+tag collisions when choosing their `view-transition-name` values.
+
+A new style value, `contain: view-transition`, serves this purpose.
+
+> Alternative names for this API have been
+> [proposed](https://github.com/w3c/csswg-drafts/issues/13123), such as
+> `view-transition-scope: auto`.
 
 A scoped view transition looks for tagged participants, starting with the scope
 itself. If this tag search encounters a descendant with `contain: view-transition`,
 it ignores that element and everything inside it, on the assumption that those tags
 belong to a different scope.
 
-It's recommended to set `contain: view-transition` on any element that will be
-used as a scope.
+> If the scope does not have `contain: view-transition`, it acquires the behavior of
+> `contain: view-transition` while the transition is running. But it's recommended
+> for the developer to set `contain: view-transition` explicitly, as this will
+> guarantee that there is never a participant collision (see [constraints](#Constraints)).
 
 ### Pause rendering
 
@@ -210,7 +221,7 @@ to the user, we must pause the rendering of the DOM being transitioned.
 
 Document view transitions pause the rendering of the entire document while the
 callback is running, but Scoped View Transitions will only pause the rendering
-of the DOM subtree under the scoped transition root.
+of the DOM subtree rooted at the scope.
 
 When the callback is finished and the transition animations are running, the
 rendering is no longer paused, but each tagged element participating in the
@@ -246,7 +257,83 @@ transition.ready.then(() => processAnimations(transition));
 
 See [CSSWG resolution for the transitionRoot property](https://github.com/w3c/csswg-drafts/issues/9908#issuecomment-2165621635).
 
+### Self-participating scopes
+
+By default, the scope is a participant in its own transition ("self-participating")
+as if it had `view-transition-name: root`. The developer can opt out of this behavior by
+setting `view-transition-name: none` on the scope explicitly.
+
+> The default `view-transition-name: root` style on the scope is inside a special
+> dynamic user-agent stylesheet that is only visible to the transition and will not
+> be reflected in [getComputedStyle()](https://developer.mozilla.org/en-US/docs/Web/API/Window/getComputedStyle).
+
+#### Interactivity
+
+The opt-out from self-participation can be combined with
+`::view-transition { pointer-events: none }` to preserve
+interactivity and hover effects for non-transitioning elements
+within the scope.
+
+See [Keeping the page interactive while a View Transition is running](https://css-tricks.com/keeping-the-page-interactive-while-a-view-transition-is-running/).
+
+#### Transitionable scope properties
+
+If the scope is self-participating, all parts of its rendering can be transitioned,
+including borders and box decorations (outline, box-shadow). This implies that the
+transition animation can overflow the box bounds of the `::view-transition` pseudo-element.
+
+Effects such as CSS `opacity` on the scope can be transitioned as well — in other words,
+they apply "on the inside" of the scope's capture, not "on the outside" of the
+scope's transition pseudo-tree.
+
+> Unlike effects, changes to the CSS `transform` or the layout offset of the scope
+> cannot be transitioned, as they directly affect the placement of the transition
+> pseudo-tree itself.
+
+#### Ancestor transition participation
+
+A scope cannot directly participate in an ancestor transition, because we treat it
+as `contain: view-transition` (see [Tag containment](#Tag-containment)).
+
+However, a
+scope and its transition can render inside a container that is participating in an
+ancestor transition. This is illustrated in the [demo](https://output.jsbin.com/runezug/quiet)
+(enable and play the "transitioning ancestor").
+
+### Scroller scopes
+
+A scope may also be a scroller — that is, it may have `overflow: auto` or `overflow: scroll`.
+
+Note that because scopes can be [self-participating](#Self-participating-scopes), the transition
+pseudo-tree is not moved by the scope's scroll offset. It is also not clipped to the scope's
+client area, which can lead to participants appearing to "pop out" of the scroller.
+
+#### Developer recommendation
+
+If you have a **self-participating scroller scope**, use
+[Nested View Transition Groups](https://github.com/WICG/view-transitions/blob/main/nested-explainer.md) and set `::view-transition-group-children(root) { overflow: clip }` to ensure that non-root
+participants are clipped to the scope's client area.
+
+> We are [considering](https://github.com/w3c/csswg-drafts/issues/12324#issuecomment-3638147116)
+> ways to do the above automatically for ergonomics. Auto-nesting will be prototyped on
+> [crbug.com/475255718](https://crbug.com/475255718).
+
+> Known issue [crbug.com/475236700](https://crbug.com/475236700): the
+> `::view-transition-group-children` incorrectly overlaps the scrollbars.
+
+If you are **opting out** of [self-participation](#Self-participating-scopes), your scope
+probably should not be a scroller. Wrap your scope in a containing `<div>` that is a scroller
+if you want the transition to run inside the scrolling contents.
+
 ## Prior Work
+
+[Self-Participating Scopes](https://bit.ly/svt-sps) reviews design questions relating to
+self-participating scopes. We have settled on the following:
+
+* Self-participation is allowed and the default, but opt-out is possible.
+* Scopes are treated as `contain: view-transition` and cannot participate in outer transitions.
+* The `::view-transition` pseudo is laid out as a box-tree child of the scope with some magical sibling-like behaviors.
+* The `::view-transition` pseudo tree is painted on top of the scope regardless of z-index.
 
 [Jake Archibald, "Shadow DOM or not - shared element transitions" (Sep 2022)](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing)
 considers an alternate Shadow DOM implementation.
