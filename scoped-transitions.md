@@ -263,10 +263,20 @@ By default, the scope is a participant in its own transition ("self-participatin
 as if it had `view-transition-name: root`. The developer can opt out of this behavior by
 setting `view-transition-name: none` on the scope explicitly.
 
-> The opt-out from self-participation can be combined with
-> `::view-transition { pointer-events: none }` to preserve
-> interactivity and hover effects for non-transitioning elements
-> within the scope. See [Keeping the page interactive while a View Transition is running](https://css-tricks.com/keeping-the-page-interactive-while-a-view-transition-is-running/).
+> The default `view-transition-name: root` style on the scope is inside a special
+> dynamic user-agent stylesheet that is only visible to the transition and will not
+> be reflected in [getComputedStyle()](https://developer.mozilla.org/en-US/docs/Web/API/Window/getComputedStyle).
+
+#### Interactivity
+
+The opt-out from self-participation can be combined with
+`::view-transition { pointer-events: none }` to preserve
+interactivity and hover effects for non-transitioning elements
+within the scope.
+
+See [Keeping the page interactive while a View Transition is running](https://css-tricks.com/keeping-the-page-interactive-while-a-view-transition-is-running/).
+
+#### Transitionable scope properties
 
 If the scope is self-participating, all parts of its rendering can be transitioned,
 including borders and box decorations (outline, box-shadow). This implies that the
@@ -280,10 +290,15 @@ scope's transition pseudo-tree.
 > cannot be transitioned, as they directly affect the placement of the transition
 > pseudo-tree itself.
 
+#### Ancestor transition participation
+
 A scope cannot directly participate in an ancestor transition, because we treat it
-as `contain: view-transition` (see [Tag containment](#Tag-containment)). However, a
+as `contain: view-transition` (see [Tag containment](#Tag-containment)).
+
+However, a
 scope and its transition can render inside a container that is participating in an
-ancestor transition.
+ancestor transition. This is illustrated in the [demo](https://output.jsbin.com/runezug/quiet)
+(enable and play the "transitioning ancestor").
 
 ### Scroller scopes
 
@@ -316,9 +331,9 @@ if you want the transition to run inside the scrolling contents.
 self-participating scopes. We have settled on the following:
 
 * Self-participation is allowed and the default, but opt-out is possible.
-* Scopes are treated as `contain:v-t` and cannot participate in outer transitions.
-* The `::v-t` pseudo is laid out as a box-tree child of the scope with some magical sibling-like behaviors.
-* The `::v-t` pseudo is painted on top of the scope regardless of z-index.
+* Scopes are treated as `contain: view-transition` and cannot participate in outer transitions.
+* The `::view-transition` pseudo is laid out as a box-tree child of the scope with some magical sibling-like behaviors.
+* The `::view-transition` pseudo tree is painted on top of the scope regardless of z-index.
 
 [Jake Archibald, "Shadow DOM or not - shared element transitions" (Sep 2022)](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing)
 considers an alternate Shadow DOM implementation.
