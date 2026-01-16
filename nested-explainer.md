@@ -1,8 +1,8 @@
 # Explainer: Nested View Transition Groups
 
 # Overview
-[view transitions](https://www.w3.org/TR/css-view-transitions-1/) work by generating a pseudo-element tree representing groups of the captured old state & the live new state of a transition.
-In its current form, the generated tree is "flat" - the original hierarchy in the DOM is lost, and all the captured groups are siblings under a single `::view-transition` pseudo-element.
+The [View Transitions](https://www.w3.org/TR/css-view-transitions-1/) API works by generating a pseudo-element tree representing groups of the captured old state & the live new state of a transition.
+By default, the generated tree is "flat" - the original hierarchy in the DOM is lost, and all the captured groups are siblings under a single `::view-transition` pseudo-element.
 
 This is sufficient for many use cases, but not for all. Some CSS features rely on the nested nature of the DOM tree. To name a few:
 * Clipping (`overflow`, `clip-path`, `border-radius`) applies to the whole tree rather than to each element individually.
@@ -12,9 +12,9 @@ This is sufficient for many use cases, but not for all. Some CSS features rely o
 When any of the above features is used, view transitions start to feel constrained. Apart from the fact that not all animation styles are possible,
 some animations would look "broken" by default, e.g. elements abruptly lose their clip for the duration of the transition.
 
-# Proposed solution
+# Solution
 
-The proposed solution is to allow authors to nest View Transtion Groups in order to recreate the original hierarchy from the original elements in the DOM.
+The solution ([shipped](https://groups.google.com/a/chromium.org/g/blink-dev/c/gVF8wCsqzIw) in Mar 2025) is to allow authors to nest View Transtion Groups in order to recreate the original hierarchy from the original elements in the DOM.
 
 ## Nested View Transition Groups
 
@@ -87,8 +87,16 @@ Note that for the pseudo-element to clip its children, we still need to explicit
 So by itself, `view-transition-group` allows for the previously unachievable visual effect, but it does require developers to
 apply relevant clipping/effects to the view transition pseudo tree.
 
+## Special group names
+
+An element with `view-transition-group: contain` becomes the containing group for all descendants that don't specify a different group.
+So in the example above we could write `.container { view-transition-group: contain; }` instead of `.icon { view-transition-group: container; }`.
+
+You can also use `view-transition-group: nearest` to make the nearest participating ancestor be the containing group.
+
 # Alternatives
 
 There are no readily available alternatives, since view transitions flattens the pseudo element tree that is built.
-Another solution to general clipping and having a slightly different effect is Scoped View Transitions which addresses
-different issues, and is also being pursued separately.
+
+We are also pursuing [Scoped View Transitions](https://github.com/WICG/view-transitions/blob/main/scoped-transitions.md),
+which addresses different issues, and is another way for a transition to be clipped by an ancestor.
