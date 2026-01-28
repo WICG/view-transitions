@@ -73,12 +73,11 @@ You can play with Scoped View Transitions in Google Chrome today.
 * Enable "Experimental Web Platform features" in `chrome://flags`.
   Alternatively, pass `--enable-features=ScopedViewTransitions` on the command line.
 
-* In your HTML, declare a scope element with `contain: view-transition layout`, and
-  one or more participants with `view-transition-name` style. Example:
+* In your HTML, declare a scope element with one or more participants like this:
 
 ```html
 <style>
-  #scope { contain: view-transition layout }
+  #scope { contain: layout; view-transition-scope: auto }
   #participant { view-transition-name: greeting }
 </style>
 <div id="scope">
@@ -197,20 +196,21 @@ Because scoped view transitions are intended to enable composition (nesting of
 unrelated components that both use transitions), developers need a way to avoid
 tag collisions when choosing their `view-transition-name` values.
 
-A new style value, `contain: view-transition`, serves this purpose.
+A new style value, `view-transition-scope: auto`, serves this purpose.
 
-> Alternative names for this API have been
-> [proposed](https://github.com/w3c/csswg-drafts/issues/13123), such as
-> `view-transition-scope: auto`.
+> `view-transition-scope: auto` was spelled `contain: view-transition` before
+> Chrome 146.0.7652.0.
+> [Issue #13123](https://github.com/w3c/csswg-drafts/issues/13123) has been filed
+> to resolve on the name of this API.
 
 A scoped view transition looks for tagged participants, starting with the scope
-itself. If this tag search encounters a descendant with `contain: view-transition`,
+itself. If this tag search encounters a descendant with `view-transition-scope: auto`,
 it ignores that element and everything inside it, on the assumption that those tags
 belong to a different scope.
 
-> If the scope does not have `contain: view-transition`, it acquires the behavior of
-> `contain: view-transition` while the transition is running. But it's recommended
-> for the developer to set `contain: view-transition` explicitly, as this will
+> If the scope does not have `view-transition-scope: auto`, it acquires the behavior of
+> `view-transition-scope: auto` while the transition is running. But it's recommended
+> for the developer to set `view-transition-scope: auto` explicitly, as this will
 > guarantee that there is never a participant collision (see [constraints](#Constraints)).
 
 ### Pause rendering
@@ -293,7 +293,7 @@ scope's transition pseudo-tree.
 #### Ancestor transition participation
 
 A scope cannot directly participate in an ancestor transition, because we treat it
-as `contain: view-transition` (see [Tag containment](#Tag-containment)).
+as `view-transition-scope: auto` (see [Tag containment](#Tag-containment)).
 
 However, a
 scope and its transition can render inside a container that is participating in an
@@ -331,7 +331,7 @@ if you want the transition to run inside the scrolling contents.
 self-participating scopes. We have settled on the following:
 
 * Self-participation is allowed and the default, but opt-out is possible.
-* Scopes are treated as `contain: view-transition` and cannot participate in outer transitions.
+* Scopes are treated as `view-transition-scope: auto` and cannot participate in outer transitions.
 * The `::view-transition` pseudo is laid out as a box-tree child of the scope with some magical sibling-like behaviors.
 * The `::view-transition` pseudo tree is painted on top of the scope regardless of z-index.
 
