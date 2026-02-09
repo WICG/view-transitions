@@ -314,16 +314,27 @@ If you have a **self-participating scroller scope**, use
 [Nested View Transition Groups](https://github.com/WICG/view-transitions/blob/main/nested-explainer.md) and set `::view-transition-group-children(root) { overflow: clip }` to ensure that non-root
 participants are clipped to the scope's client area.
 
-> We are [considering](https://github.com/w3c/csswg-drafts/issues/12324#issuecomment-3638147116)
+> We are [considering](https://github.com/w3c/csswg-drafts/issues/13420)
 > ways to do the above automatically for ergonomics. Auto-nesting will be prototyped on
 > [crbug.com/475255718](https://crbug.com/475255718).
-
-> Known issue [crbug.com/475236700](https://crbug.com/475236700): the
-> `::view-transition-group-children` incorrectly overlaps the scrollbars.
 
 If you are **opting out** of [self-participation](#Self-participating-scopes), your scope
 probably should not be a scroller. Wrap your scope in a containing `<div>` that is a scroller
 if you want the transition to run inside the scrolling contents.
+
+#### Scrollbar padding
+
+If you are using `overflow: clip` for a self-participating scroller scope as recommended above,
+you may observe that the `::view-transition-group-children` incorrectly overlaps the scrollbars.
+This is a known limitation of nested groups ([crbug.com/475236700](https://crbug.com/475236700)).
+
+You can work around this by setting `overflow-clip-margin: content-box` and
+applying padding to the `::view-transition-group-children` corresponding to the
+space occupied by the scrollbars ([demo](https://output.jsbin.com/xiruqev/quiet)).
+(You might need to use Javascript to detect the existence and thickness of the scrollbar.)
+
+We are [considering](https://github.com/w3c/csswg-drafts/issues/13407) ways to
+use `scrollbar-gutter` to incorporate this logic into the user-agent style sheet.
 
 ## Prior Work
 
