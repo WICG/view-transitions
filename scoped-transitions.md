@@ -177,12 +177,10 @@ that occur during the callback are not presented to the user prematurely.
   pre-existing transition is skipped.
 
 * A tagged element cannot participate (by generating a `::view-transition-group`)
-  in more than one active transition at the same time. If a transition is
-  started which would trigger this situation, the pre-existing transition is
-  skipped.
-
-> Note: There is a [proposal](https://github.com/w3c/csswg-drafts/issues/12323)
-> to skip the inner transition instead.
+  in more than one active transition at the same time. If you try to start a
+  transition which would trigger this situation, it is skipped. (See
+  [#12323](https://github.com/w3c/csswg-drafts/issues/12323) for discussion of
+  which transition to skip.)
 
 Within these constraints it is possible for two view transitions to run
 concurrently on different scopes, even if one is a descendant of the other.
