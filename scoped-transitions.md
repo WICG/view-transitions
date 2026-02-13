@@ -334,15 +334,82 @@ space occupied by the scrollbars ([demo](https://output.jsbin.com/xiruqev/quiet)
 We are [considering](https://github.com/w3c/csswg-drafts/issues/13407) ways to
 use `scrollbar-gutter` to incorporate this logic into the user-agent style sheet.
 
-## Prior Work
+## Alternatives Considered
 
-[Self-Participating Scopes](https://bit.ly/svt-sps) reviews design questions relating to
-self-participating scopes. We have settled on the following:
+Here are things we could have done instead of scoped view transitions, and things
+we could have done differently within scoped view transitions.
 
-* Self-participation is allowed and the default, but opt-out is possible.
+### Nothing (status quo)
+
+We could stick with document-level view transitions and the limitations described
+in the [Motivation](#Motivation) section.
+
+Developers have expressed that those limitations cause real problems. For example,
+a content area may be the logical subject of a view transition, but other page elements
+like tooltips and menus need to appear on top of the content area in the `z-index` order.
+Developers end up adding `view-transition-name` to those overlaid elements, even though
+they are not transitioning, just to keep them on top, which becomes a game of "whack-a-mole".
+
+The global nature of document-level view transitions is also incongruous with the web's
+core values of composition and modularity. CSS and DOM in general are designed to facilitate
+granular application of rendering features, and the "isolation" of features to subtrees
+(see e.g. [`contain`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/contain))
+is important for performance and heterogeneous components.
+
+### Other scoping mechanisms
+
+View transitions could have been "scoped" to something other than an element.
+
+A limited form of scoping was already possible by running a view transition in an `<iframe>`.
+However, it is limiting and impractical for developers to create an iframe wherever they
+want to run a view transition.
+
+Similarly, we could have tied view transitions to
+[shadow trees](https://developer.mozilla.org/en-US/docs/Glossary/Shadow_tree) to
+enable scoped view transitions for
+[Web Components](https://developer.mozilla.org/en-US/docs/Web/API/Web_components).
+But shadow DOM comes with its own limitations (Web Components are
+[okay](https://nolanlawson.com/2024/09/28/web-components-are-okay/) but far from universally
+adopted), and many component frameworks are not based on shadow DOM.
+
+> There is a [proposal](https://github.com/w3c/csswg-drafts/issues/12953) to allow starting
+> a scoped view transition on a shadow root.
+
+### API alternatives
+
+The `startViewTransition` method accepts an
+[options](https://developer.mozilla.org/en-US/docs/Web/API/Document/startViewTransition#options)
+object, which we could have extended to produce something like
+`document.startViewTransition({ scope: element, ... })`.
+But if scoped view transitions are logically independent and isolated from each other,
+it seems more intuitive for the scope element to be the target of the method.
+
+The [tag containment](#Tag-containment) API could have been something other than
+`view-transition-scope: auto`. We considered adding a new value to the `contain` property
+to express this. However, `contain: view-transition` raises difficult questions, such as
+whether it is implied by `contain: strict`.
+
+### Self-participation alternatives
+
+A number of design questions relating to [self-participating scopes](#Self-participating-scopes)
+were explored in [Self-Participating Scopes](https://bit.ly/svt-sps). We settled on the following:
+
+* Self-participation is allowed and the default, but opt-out for [interactivity](#Interactivity) is possible.
 * Scopes are treated as `view-transition-scope: auto` and cannot participate in outer transitions.
 * The `::view-transition` pseudo is laid out as a box-tree child of the scope with some magical sibling-like behaviors.
 * The `::view-transition` pseudo tree is painted on top of the scope regardless of z-index.
+
+Alternatively, we could have disallowed self-participation, achieving some conceptual
+simplifications at the cost of forcing developers to create an extra `<div>` to serve as the scope.
+
+It was decided that the ergonomic benefits of enabling trivial cases like `<div id=scope>Hello world</div>`
+to perform the expected cross-fade
+(instead of making you write `<div id=scope><div id=participant>Hello world</div></div>`)
+were sufficient to justify the spec and implementation complexity of self-participation.
+See [Web Platform Design Principles, "Priority of Constituencies"](https://www.w3.org/TR/design-principles/#priority-of-constituencies).
+
+
+## Prior Work
 
 [Jake Archibald, "Shadow DOM or not - shared element transitions" (Sep 2022)](https://docs.google.com/document/d/1kW4maYe-Zqi8MIkuzvXraIkfx3XF-9hkKDXYWoxzQFA/edit?usp=sharing)
 considers an alternate Shadow DOM implementation.
