@@ -1,6 +1,6 @@
 # Scoped View Transitions
 
-Scoped View Transitions is a proposed extension to the
+Scoped View Transitions is an extension to the
 [View Transition API][VT-api] to help developers perform transitions within the
 scope of a DOM subtree.
 
@@ -47,15 +47,15 @@ Scoped View Transitions delivers four benefits to the developer that were not ac
 Scoped View Transitions has been proposed to the CSS Working Group
 ([#9890](https://github.com/w3c/csswg-drafts/issues/9890)) as a change to the
 [CSS View Transitions Module Level 2][css-view-transitions-2] specification,
-and is [under review](https://github.com/w3ctag/design-reviews/issues/1188)
+and [passed review](https://github.com/w3ctag/design-reviews/issues/1188)
 by the W3C Technical Architecture Group (TAG).
 
-Chrome has published an
-[Intent to Ship](https://groups.google.com/a/chromium.org/g/blink-dev/c/n1-oZUKaXHY/m/LqwtfSBWBQAJ)
-with an estimated milestone of M147.
-See also [Chrome Platform Status](https://chromestatus.com/feature/5109852273377280).
-The Chrome implementation ([crbug.com/394052227](https://crbug.com/394052227))
-is behind the `--enable-features=ScopedViewTransitions` command-line flag.
+Chrome 147 has
+[shipped](https://groups.google.com/a/chromium.org/g/blink-dev/c/n1-oZUKaXHY/m/LqwtfSBWBQAJ)
+Scoped View Transitions.
+See also [Chrome Platform Status](https://chromestatus.com/feature/5109852273377280)
+and the [implementation tracking bug](https://crbug.com/394052227).
+Older Chrome versions require the `--enable-features=ScopedViewTransitions` command-line flag.
 
 Here is a [**DEMO**](https://output.jsbin.com/runezug/quiet) of Scoped View Transitions,
 showing concurrent transitions, transitioning inside a scroller, nested scoped transitions,
@@ -73,9 +73,6 @@ You can play with Scoped View Transitions in Google Chrome today.
 
 * Chrome 147 or newer (currently in dev and canary
   [channels](https://support.google.com/chrome/a/answer/9027636?hl=en)) is recommended.
-
-* Enable "Experimental Web Platform features" in `chrome://flags`.
-  Alternatively, pass `--enable-features=ScopedViewTransitions` on the command line.
 
 * In your HTML, declare a scope element with one or more participants like this:
 
