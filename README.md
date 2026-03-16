@@ -1,5 +1,7 @@
 # View Transitions
 
+⚠️⚠️ **Status**: Transitioned to https://github.com/w3c/csswg-drafts/tree/main/css-view-transitions-2 ⚠️⚠️
+
 *[Formerly known as the Shared Element Transitions](https://github.com/w3c/csswg-drafts/issues/7788#issuecomment-1269104296)*
 
 For help getting started quickly, check out the [developer guide](https://github.com/WICG/shared-element-transitions/blob/main/developer-guide.md) for easy to follow steps, and the I/O 2022 [talk](https://youtu.be/JCJUPJ_zDQ4) and [codelab](https://youtu.be/eUX91N6Gj1Q?t=2058) about View Transitions for more visuals and help. 
