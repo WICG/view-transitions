@@ -71,8 +71,7 @@ and transitioning behind a higher z-index overlay.
 
 You can play with Scoped View Transitions in Google Chrome today.
 
-* Chrome 147 or newer (currently in dev and canary
-  [channels](https://support.google.com/chrome/a/answer/9027636?hl=en)) is recommended.
+* Use Chrome 147 or newer.
 
 * In your HTML, declare a scope element with one or more participants like this:
 
@@ -306,23 +305,22 @@ Note that because scopes can be [self-participating](#Self-participating-scopes)
 pseudo-tree is not moved by the scope's scroll offset. It is also not clipped to the scope's
 client area, which can lead to participants appearing to "pop out" of the scroller.
 
-#### Developer recommendation
-
-If you have a **self-participating scroller scope**, use
-[Nested View Transition Groups](https://github.com/WICG/view-transitions/blob/main/nested-explainer.md) and set `::view-transition-group-children(root) { overflow: clip }` to ensure that non-root
-participants are clipped to the scope's client area.
-
-> We are [considering](https://github.com/w3c/csswg-drafts/issues/13420)
-> ways to do the above automatically for ergonomics. Auto-nesting will be prototyped on
-> [crbug.com/475255718](https://crbug.com/475255718).
-
 If you are **opting out** of [self-participation](#Self-participating-scopes), your scope
 probably should not be a scroller. Wrap your scope in a containing `<div>` that is a scroller
 if you want the transition to run inside the scrolling contents.
 
+#### Automatic nesting
+
+If you have a **self-participating scroller scope**, we use
+[Nested View Transition Groups](https://github.com/WICG/view-transitions/blob/main/nested-explainer.md) and set `::view-transition-group-children(root) { overflow: clip }` to ensure that non-root
+participants are clipped to the scope's client area.
+
+See [#13420](https://github.com/w3c/csswg-drafts/issues/13420) for more information about this
+behavior.
+
 #### Scrollbar padding
 
-If you are using `overflow: clip` for a self-participating scroller scope as recommended above,
+If you have an auto-nested self-participating scroller scope as described above,
 you may observe that the `::view-transition-group-children` incorrectly overlaps the scrollbars.
 This is a known limitation of nested groups ([crbug.com/475236700](https://crbug.com/475236700)).
 
