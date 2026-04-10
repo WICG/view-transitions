@@ -6,15 +6,24 @@ For help getting started quickly, check out the [developer guide](https://github
 
 ### Overview
 
-View Transitions is a proposal for a new web API that allows a
+View Transitions is a web API that allows a
 simple set of transition animations in both Single-Page Applications (SPAs) and
 Multi-Page Applications (MPAs).
 
-The inspiration for this feature are transitions similar to the ones listed in
-the [Material Design Principles](https://material.io/design/motion/the-motion-system.html).
-
-The intent is to support transitions similar to
+The inspiration for this feature was a desire for the web to have transitions similar to the ones listed in
+the [Material Design Principles](https://material.io/design/motion/the-motion-system.html) and
 [Android Activity Transitions](https://developer.android.com/training/transitions/start-activity).
+
+### Recent Developments
+
+Many new improvements to view transitions are in dedicated explainers in this repo, such as:
+
+* [Scoped View Transitions](https://github.com/WICG/view-transitions/blob/main/scoped-transitions.md)
+* [Nested View Transitions](https://github.com/WICG/view-transitions/blob/main/nested-explainer.md)
+* [activeViewTransition](https://github.com/WICG/view-transitions/blob/main/active-view-transition.md)
+* [Cross Document View Transitions](https://github.com/WICG/view-transitions/blob/main/cross-doc-explainer.md)
+
+The rest of this page is mainly of historical interest.
 
 ### Introduction
 
@@ -23,13 +32,6 @@ When a user navigates on the web from Page-A to Page-B,  the content that they a
 Smooth loading animations can lower the cognitive load by helping users [stay in context](https://www.smashingmagazine.com/2013/10/smart-transitions-in-user-experience-design/) and better [understand the relationship](https://material.io/blog/motion-research-container-transform#:~:text=transforming%20one%20element%20into%20another%20to%20reinforce%20the%20relationship%20of%20the%20two%20elements) between Page-A and Page-B as they navigate, and it can [reduce the perceived latency of loading](https://wp-rocket.me/blog/perceived-performance-need-optimize/#:~:text=1.%20Use%20activity%20and%20progress%20indicators) by providing them with something engaging and delightful in the meantime. For these reasons, most platforms provide easy-to-use primitives that enable developers to build seamless transitions: [Android](https://developer.android.com/training/transitions/start-activity), [iOS/Mac](https://developer.apple.com/documentation/uikit/uimodaltransitionstyle) and [Windows](https://docs.microsoft.com/en-us/windows/apps/design/motion/page-transitions).
 
 View transitions enable you to create transition animations from page A to page B in both single-page applications (SPAs) and multi-page applications (MPAs). 
-
-
-### Current Status
-
-The API is available in Chrome Canary as of version 101 behind a flag at chrome://flags/#document-transition; however, currently it is only functional for SPAs. 
-
-Animations in same-origin MPA are targeted as future scope. However, the goal is that using the API for SPA and MPA transitions will be very similar. In the more distant future, the API is planned to be extended to cross-origin cases, with slightly more limited functionality due to security. Cross-origin transitions are not covered in this document. 
 
 ### Use Cases 
 
@@ -50,8 +52,6 @@ It is important to note that this API does not have a separate definition of roo
 For more information on how this API works, please refer to the explainer [here](https://github.com/WICG/shared-element-transitions/blob/main/explainer.md). 
 
 ### How to Get Started 
-
-To get started with element transitions today, enable the API via chrome://flags/#document-transition.
 
 In order to use View transitions, first the developer must select the element. This will be the element that animates independently during the transition, and it will be captured as a single image (i.e. the captured painting of the element includes things that appear outside its bounding box like shadows, blurs, etc.). 
 
