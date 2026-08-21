@@ -1,3 +1,5 @@
+Archived!! Work on this subject has moved to https://drafts.csswg.org/css-view-transitions-2/
+
 # View Transitions
 
 *[Formerly known as the Shared Element Transitions](https://github.com/w3c/csswg-drafts/issues/7788#issuecomment-1269104296)*
