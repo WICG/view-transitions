@@ -1,4 +1,4 @@
-Archived!! Work on this subject has moved to https://drafts.csswg.org/css-view-transitions-2/
+## Archived!! - Work on this has moved to https://drafts.csswg.org/css-view-transitions-2/
 
 # View Transitions
 
